@@ -1,0 +1,61 @@
+openapi: 3.0.1
+info:
+  title: DANS Sword2 API
+  description: Catalog service for archives
+  version: 1.0.1
+servers:
+  - url: http://localhost:20312/
+    description: Sword
+
+paths:
+  /collection/{id}:
+    post:
+      tags:
+        - sword2
+      description: Adds a new archive
+      operationId: deposit
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - lat
+                - long
+              properties:
+                lat:
+                  type: number
+                long:
+                  type: number
+          text/plain:
+            schema:
+              type: string
+              minLength: 5
+
+      responses:
+        default:
+          description: default response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+
+
+components:
+  schemas:
+    Collection:
+      required:
+        - tar_uuid
+      type: object
+      properties:
+        tar_uuid:
+          type: string
+        vault_path:
+          type: string

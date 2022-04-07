@@ -34,11 +34,12 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
     @Override
     public void initialize(final Bootstrap<DdSword2Configuration> bootstrap) {
         // TODO: application initialization
+
     }
 
     @Override
     public void run(final DdSword2Configuration configuration, final Environment environment) {
-
+        environment.jersey()
+                .register(CollectionApiImpl.class);
     }
-
 }
