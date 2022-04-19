@@ -1,17 +1,46 @@
-#
-# Module configuration file
-#
-# Please, modify the configuration below to match your environment. Also, delete and/or modify
-# this description.
-
 server:
   applicationContextPath: /
   adminContextPath: /
   applicationConnectors:
     - type: http
-      # Replace with port number unique for this service
-      port: 20000
+      port: 20320
   adminConnectors:
     - type: http
-      # Replace with port number unique for this service
-      port: 20001
+      port: 20321
+
+users:
+#  - name: 'user001'
+#    passwordHash: ''
+#    filepathMapping: true
+#    collections: ['collection1']
+
+sword2:
+  baseUrl: 'https://your-domain.com/'
+  collections:
+    - name: 'collection1'
+      path: '1'
+      uploads: /var/opt/dans.knaw.nl/tmp/dd-sword2/upload-collection1
+      deposits: /var/opt/dans.knaw.nl/tmp/dd-ingest-flow/
+      autoClean:
+        - REJECTED
+  diskSpaceMargin: 2G
+  rescheduleDelay: 30 seconds
+  finalizingQueue:
+    nameFormat: "finalization-worker-%d"
+    maxQueueSize: 5000
+    # Number of threads will be increased when maxQueueSize is exceeded.
+    minThreads: 2
+    # No more than maxThreads will be created though
+    maxThreads: 5
+    # Threads will die after 60 seconds of idleness
+    keepAliveTime: 60 seconds
+
+#
+# See https://www.dropwizard.io/en/latest/manual/configuration.html#logging
+#
+logging:
+  level: INFO
+  appenders:
+    - type: file
+      archive: false
+      currentLogFilename: /var/opt/dans.knaw.nl/log/dd-sword2/dd-sword2.log
