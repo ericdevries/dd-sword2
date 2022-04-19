@@ -19,6 +19,12 @@ package nl.knaw.dans.sword2;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import nl.knaw.dans.sword2.resource.CollectionHandlerImpl;
+import nl.knaw.dans.sword2.service.BagExtractorImpl;
+import nl.knaw.dans.sword2.service.DepositManagerImpl;
+import nl.knaw.dans.sword2.service.DepositPropertiesManagerImpl;
+import nl.knaw.dans.sword2.service.FileServiceImpl;
+import nl.knaw.dans.sword2.service.ZipServiceImpl;
 
 public class DdSword2Application extends Application<DdSword2Configuration> {
 
@@ -38,8 +44,16 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
     }
 
     @Override
-    public void run(final DdSword2Configuration configuration, final Environment environment) {
+    public void run(final DdSword2Configuration configuration, final Environment environment) throws Exception {
+        var fileService = new FileServiceImpl();
+        var depositPropertiesManager = new DepositPropertiesManagerImpl();
+
+        var zipService = new ZipServiceImpl(fileService);
+
+        var bagExtractor = new BagExtractorImpl(zipService);
+        var depositManager = new DepositManagerImpl(bagExtractor, fileService, depositPropertiesManager);
+
         environment.jersey()
-                .register(CollectionApiImpl.class);
+            .register(new CollectionHandlerImpl(depositManager));
     }
 }

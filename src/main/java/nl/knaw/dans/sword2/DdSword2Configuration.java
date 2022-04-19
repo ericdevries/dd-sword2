@@ -16,10 +16,20 @@
 
 package nl.knaw.dans.sword2;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dropwizard.Configuration;
+import nl.knaw.dans.sword2.service.BagExtractorImpl;
+import nl.knaw.dans.sword2.service.DepositManager;
+import nl.knaw.dans.sword2.service.DepositManagerImpl;
+import nl.knaw.dans.sword2.service.DepositPropertiesManager;
+import nl.knaw.dans.sword2.service.DepositPropertiesManagerImpl;
+import nl.knaw.dans.sword2.service.FileServiceImpl;
+import nl.knaw.dans.sword2.service.ZipServiceImpl;
 
 import javax.validation.constraints.NotEmpty;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DdSword2Configuration extends Configuration {
 

@@ -13,13 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.sword2;
+package nl.knaw.dans.sword2.resource;
 
 import nl.knaw.dans.sword2.models.Entry;
-import nl.knaw.dans.sword2.openapi.api.CollectionDto;
 
-import javax.ws.rs.*;
-import javax.ws.rs.core.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.io.InputStream;
 
 @Path("/collection/{id}")
@@ -27,7 +33,6 @@ public interface CollectionHandler {
     //    @POST
     //    @Consumes({"application/json"})
     //    @Produces({"application/json"})
-    CollectionDto deposit(CollectionDto input);
 
     @GET
     @Produces(MediaType.APPLICATION_XML)
@@ -38,8 +43,4 @@ public interface CollectionHandler {
     @Produces(MediaType.APPLICATION_XML)
     Response depositAnything(InputStream inputStream, @Context HttpHeaders headers);
 
-    //    @POST
-    //    @Consumes({"application/atom+xml"})
-    //    @Produces({"application/json"})
-    CollectionDto depositAtom(InputStream inputStream);
 }

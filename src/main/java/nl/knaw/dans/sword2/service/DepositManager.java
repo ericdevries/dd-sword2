@@ -13,14 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package nl.knaw.dans.sword2.service;
 
-@XmlSchema(namespace = "http://www.w3.org/2005/Atom",
-        elementFormDefault = XmlNsForm.QUALIFIED,
-        xmlns = {@XmlNs(prefix = "",
-                namespaceURI = "http://www.w3.org/2005/Atom"), @XmlNs(prefix = "sword",
-                namespaceURI = "http://purl.org/net/sword/")})
-package nl.knaw.dans.sword2.models;
+import nl.knaw.dans.sword2.Deposit;
+import nl.knaw.dans.sword2.DepositState;
 
-import javax.xml.bind.annotation.XmlNs;
-import javax.xml.bind.annotation.XmlNsForm;
-import javax.xml.bind.annotation.XmlSchema;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Path;
+
+public interface DepositManager {
+
+    Path storeDepositContent(Deposit deposit, InputStream inputStream) throws IOException;
+
+    void createDeposit(Deposit deposit, Path payload) throws IOException;
+
+    void setDepositState(Deposit deposit, DepositState state);
+}

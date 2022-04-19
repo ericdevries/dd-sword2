@@ -13,57 +13,55 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package nl.knaw.dans.sword2.models;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
-import java.util.ArrayList;
-import java.util.List;
+import java.net.URI;
 
-@XmlRootElement(name = "entry")
+@XmlRootElement(name = "link")
 @XmlAccessorType(XmlAccessType.FIELD)
-public class Entry {
-    @XmlElement
-    private String title;
-    @XmlElement
-    private String id;
-    @XmlElement(name = "link")
-    private List<Link> links = new ArrayList<>();
-    @XmlElement(namespace = "http://purl.org/net/sword/")
-    private String packaging;
+public class Link {
+    @XmlAttribute
+    private URI href;
+    @XmlAttribute
+    private String rel;
+    @XmlAttribute
+    private String type;
 
-    public String getPackaging() {
-        return packaging;
+    public Link() {
+
     }
 
-    public void setPackaging(String packaging) {
-        this.packaging = packaging;
+    public Link(URI href, String rel, String type) {
+        this.href = href;
+        this.rel = rel;
+        this.type = type;
     }
 
-    public List<Link> getLinks() {
-        return links;
+    public URI getHref() {
+        return href;
     }
 
-    public void setLinks(List<Link> links) {
-        this.links = links;
+    public void setHref(URI href) {
+        this.href = href;
     }
 
-    public String getTitle() {
-        return title;
+    public String getRel() {
+        return rel;
     }
 
-    public void setTitle(String title) {
-        this.title = title;
+    public void setRel(String rel) {
+        this.rel = rel;
     }
 
-    public String getId() {
-        return id;
+    public String getType() {
+        return type;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setType(String type) {
+        this.type = type;
     }
 }

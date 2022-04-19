@@ -13,14 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package nl.knaw.dans.sword2.service;
 
-@XmlSchema(namespace = "http://www.w3.org/2005/Atom",
-        elementFormDefault = XmlNsForm.QUALIFIED,
-        xmlns = {@XmlNs(prefix = "",
-                namespaceURI = "http://www.w3.org/2005/Atom"), @XmlNs(prefix = "sword",
-                namespaceURI = "http://purl.org/net/sword/")})
-package nl.knaw.dans.sword2.models;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 
-import javax.xml.bind.annotation.XmlNs;
-import javax.xml.bind.annotation.XmlNsForm;
-import javax.xml.bind.annotation.XmlSchema;
+public interface ZipService {
+
+    void extractZipFile(Path zipFile, Path targetPath) throws IOException;
+
+    void extractZipFileWithFileMapping(Path zipFile, Path targetPath, Map<String, String> fileMapping) throws IOException;
+
+    List<String> getFilesInZip(Path zipFile) throws IOException;
+}
