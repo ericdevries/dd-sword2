@@ -46,12 +46,12 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
     @Override
     public void run(final DdSword2Configuration configuration, final Environment environment) throws Exception {
         var fileService = new FileServiceImpl();
-        var depositPropertiesManager = new DepositPropertiesManagerImpl();
+        var depositPropertiesManager = new DepositPropertiesManagerImpl(configuration.getSword2());
 
         var zipService = new ZipServiceImpl(fileService);
 
         var bagExtractor = new BagExtractorImpl(zipService);
-        var depositManager = new DepositManagerImpl(bagExtractor, fileService, depositPropertiesManager);
+        var depositManager = new DepositManagerImpl(configuration.getSword2(), bagExtractor, fileService, depositPropertiesManager);
 
         environment.jersey()
             .register(new CollectionHandlerImpl(depositManager));

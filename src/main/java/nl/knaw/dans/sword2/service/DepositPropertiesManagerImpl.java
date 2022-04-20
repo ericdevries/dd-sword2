@@ -17,6 +17,7 @@ package nl.knaw.dans.sword2.service;
 
 import nl.knaw.dans.sword2.Deposit;
 import nl.knaw.dans.sword2.DepositState;
+import nl.knaw.dans.sword2.config.Sword2Config;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.FileBasedConfiguration;
 import org.apache.commons.configuration2.PropertiesConfiguration;
@@ -31,12 +32,23 @@ import java.nio.file.Path;
 public class DepositPropertiesManagerImpl implements DepositPropertiesManager {
     private final String FILENAME = "deposit.properties";
     private final String rootDir = "data/deposits";  // TODO configurable
+    private final Sword2Config sword2Config;
 
+    public DepositPropertiesManagerImpl(Sword2Config sword2Config) {
+        this.sword2Config = sword2Config;
+    }
+
+    private Path getDepositPath(Deposit deposit) {
+        var id = deposit.getCanonicalId();
+        var rootDir = sword2Config.getCollections().get(0).getDeposits(); //.resolve(Path.of(id, FILENAME));
+        // TODO implement logic for archived (see easy-sword2)
+        var propertiesFile = rootDir.resolve(Path.of(id, FILENAME));
+
+        return propertiesFile;
+    }
     @Override
     public DepositProperties getProperties(Deposit deposit) {
-        var id = deposit.getCanonicalId();
-        // TODO implement logic for archived (see easy-sword2)
-        var propertiesFile = Path.of(rootDir, id, FILENAME);
+        var propertiesFile = getDepositPath(deposit);
 
         var params = new Parameters();
         var paramConfig = params.properties()
@@ -62,7 +74,7 @@ public class DepositPropertiesManagerImpl implements DepositPropertiesManager {
     @Override
     public void saveProperties(Deposit deposit, DepositProperties properties) {
         // TODO implement logic for archived (see easy-sword2)
-        var propertiesFile = Path.of(rootDir, deposit.getCanonicalId(), FILENAME);
+        var propertiesFile = getDepositPath(deposit);
 
         var params = new Parameters();
         var paramConfig = params.properties()

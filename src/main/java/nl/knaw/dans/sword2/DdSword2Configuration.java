@@ -16,21 +16,34 @@
 
 package nl.knaw.dans.sword2;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dropwizard.Configuration;
-import nl.knaw.dans.sword2.service.BagExtractorImpl;
-import nl.knaw.dans.sword2.service.DepositManager;
-import nl.knaw.dans.sword2.service.DepositManagerImpl;
-import nl.knaw.dans.sword2.service.DepositPropertiesManager;
-import nl.knaw.dans.sword2.service.DepositPropertiesManagerImpl;
-import nl.knaw.dans.sword2.service.FileServiceImpl;
-import nl.knaw.dans.sword2.service.ZipServiceImpl;
+import nl.knaw.dans.sword2.config.Sword2Config;
+import nl.knaw.dans.sword2.config.UserConfig;
 
-import javax.validation.constraints.NotEmpty;
-import java.util.ArrayList;
+import javax.validation.Valid;
 import java.util.List;
 
 public class DdSword2Configuration extends Configuration {
 
+    @Valid
+    private List<UserConfig> users;
+
+    @Valid
+    private Sword2Config sword2;
+
+    public Sword2Config getSword2() {
+        return sword2;
+    }
+
+    public void setSword2(Sword2Config sword2) {
+        this.sword2 = sword2;
+    }
+
+    public List<UserConfig> getUsers() {
+        return users;
+    }
+
+    public void setUsers(List<UserConfig> users) {
+        this.users = users;
+    }
 }

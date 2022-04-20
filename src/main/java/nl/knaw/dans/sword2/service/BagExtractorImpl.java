@@ -53,11 +53,13 @@ public class BagExtractorImpl implements BagExtractor {
         }
     }
 
+    // TODO prevent unzip errors with ../.. etc
     void extractZipWithFilePathMapping(Path path, Path target) throws IOException {
         var fileNames = zipService.getFilesInZip(path);
 
         var entries = fileNames.stream().map(fileName -> {
             var matcher = prefixPattern.matcher(fileName);
+
             if (matcher.find()) {
                 var prefix = matcher.group();
                 var newPath = Path.of(prefix, UUID.randomUUID().toString()).toString();
@@ -69,48 +71,6 @@ public class BagExtractorImpl implements BagExtractor {
         }).filter(Objects::nonNull).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         zipService.extractZipFileWithFileMapping(path, target, entries);
-        ////
-        ////        extractZip(path);
-        ////
-        ////        var file = new ZipFile(path.toString());
-        ////        var rootDir = Files.list(path.getParent()).filter(Files::isDirectory).findFirst();
-        ////
-        ////        try {
-        ////            var filelist = file.getFileHeaders().stream().map(item -> {
-        ////                    var name = item.getFileName();
-        ////                    var matcher = prefixPattern.matcher(name);
-        ////
-        ////                    if (matcher.find()) {
-        ////                        var prefix = matcher.group();
-        ////
-        ////                        return Path.of(prefix, UUID.randomUUID().toString());
-        ////                    }
-        ////
-        ////                    return null;
-        ////                })
-        ////                .filter(Objects::nonNull)
-        ////                .map(name -> {
-        ////                    System.out.println("RELATIVE: " + rootDir.get().relativize(name));
-        ////                    return name;
-        ////                    /*
-        ////
-        ////  def toBagRelativeMapping(zipRelativeMapping: Map[String, String], bagName: String): Try[Map[String, String]] = Try {
-        ////    zipRelativeMapping.map {
-        ////      case (orgName, newName) => (Paths.get(bagName).relativize(Paths.get(orgName)).toString, Paths.get(bagName).relativize(Paths.get(newName)).toString)
-        ////    }
-        ////  }
-        ////                     */
-        ////                }).collect(Collectors.toList());
-        ////
-        ////            System.out.println("FILES: ");
-        ////
-        ////            for (var item : filelist) {
-        ////                System.out.println("- " + item);
-        ////            }
-        //        }
-        //        catch (ZipException e) {
-        //            e.printStackTrace();
-        //        }
     }
 
     void extractZip(Path path) {

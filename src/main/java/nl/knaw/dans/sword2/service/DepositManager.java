@@ -17,6 +17,7 @@ package nl.knaw.dans.sword2.service;
 
 import nl.knaw.dans.sword2.Deposit;
 import nl.knaw.dans.sword2.DepositState;
+import nl.knaw.dans.sword2.config.Sword2Config;
 
 import java.io.IOException;
 import java.io.InputStream;
