@@ -13,31 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.sword2.models;
+package nl.knaw.dans.sword2.service;
 
-import javax.xml.bind.annotation.XmlID;
-import javax.xml.bind.annotation.XmlType;
-import javax.xml.bind.annotation.XmlValue;
+import nl.knaw.dans.sword2.Deposit;
+import nl.knaw.dans.sword2.DepositState;
 
-@XmlType(namespace = "http://www.example.org/type")
-public class DC {
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Path;
 
-    private String key;
-    private String value;
+public interface DepositHandler {
 
-    public String getKey() {
-        return key;
-    }
+    // TODO move to different class
+    Path storeDepositContent(Deposit deposit, InputStream inputStream) throws IOException;
 
-    public void setKey(String key) {
-        this.key = key;
-    }
+    DepositProperties createDeposit(Deposit deposit, Path payload) throws IOException;
 
-    public String getValue() {
-        return value;
-    }
+    void setDepositState(Deposit deposit, DepositState state);
 
-    public void setValue(String value) {
-        this.value = value;
-    }
+    DepositProperties getDepositProperties(Deposit deposit);
+
 }

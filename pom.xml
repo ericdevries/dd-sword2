@@ -46,6 +46,12 @@
     </scm>
 
     <dependencies>
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-forms</artifactId>
+            <version>${dropwizard.version}</version>
+        </dependency>
+
         <!-- Add project-specific dependencies here -->
         <dependency>
             <groupId>io.swagger</groupId>

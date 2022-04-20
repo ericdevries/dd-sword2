@@ -13,14 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package nl.knaw.dans.sword2.models.entry;
 
-@XmlSchema(namespace = "http://www.w3.org/2005/Atom",
-        elementFormDefault = XmlNsForm.QUALIFIED,
-        xmlns = {@XmlNs(prefix = "",
-                namespaceURI = "http://www.w3.org/2005/Atom"), @XmlNs(prefix = "sword",
-                namespaceURI = "http://purl.org/net/sword/terms/")})
-package nl.knaw.dans.sword2.models;
+import javax.xml.bind.annotation.XmlID;
+import javax.xml.bind.annotation.XmlType;
+import javax.xml.bind.annotation.XmlValue;
 
-import javax.xml.bind.annotation.XmlNs;
-import javax.xml.bind.annotation.XmlNsForm;
-import javax.xml.bind.annotation.XmlSchema;
+@XmlType(namespace = "http://www.example.org/type")
+public class DC {
+
+    private String key;
+    private String value;
+
+    public String getKey() {
+        return key;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
+    public void setValue(String value) {
+        this.value = value;
+    }
+}

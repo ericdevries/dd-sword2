@@ -15,40 +15,48 @@
  */
 package nl.knaw.dans.sword2.resource;
 
-import nl.knaw.dans.sword2.Deposit;
-import nl.knaw.dans.sword2.UriRegistry;
-import nl.knaw.dans.sword2.models.Entry;
-import nl.knaw.dans.sword2.models.Link;
-import nl.knaw.dans.sword2.service.DepositManager;
-import org.apache.commons.fileupload.ParameterParser;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+import javax.xml.bind.DatatypeConverter;
+import nl.knaw.dans.sword2.Deposit;
+import nl.knaw.dans.sword2.UriRegistry;
+import nl.knaw.dans.sword2.models.entry.Entry;
+import nl.knaw.dans.sword2.service.ChecksumCalculator;
+import nl.knaw.dans.sword2.service.DepositHandler;
+import nl.knaw.dans.sword2.service.DepositReceiptFactory;
+import org.apache.commons.fileupload.ParameterParser;
+import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 
 @Singleton
 public class CollectionHandlerImpl implements CollectionHandler {
 
-    private final DepositManager depositManager;
+    private final DepositHandler depositHandler;
+    private final DepositReceiptFactory depositReceiptFactory;
+
+    private final ChecksumCalculator checksumCalculator;
 
     @Inject
-    public CollectionHandlerImpl(DepositManager depositManager) {
-        this.depositManager = depositManager;
+    public CollectionHandlerImpl(DepositHandler depositHandler,
+        DepositReceiptFactory depositReceiptFactory,
+        ChecksumCalculator checksumCalculator
+    ) {
+        this.depositHandler = depositHandler;
+        this.depositReceiptFactory = depositReceiptFactory;
+        this.checksumCalculator = checksumCalculator;
     }
 
     @Override
@@ -59,16 +67,25 @@ public class CollectionHandlerImpl implements CollectionHandler {
         return element;
     }
 
-    private String decodeURL(String url) {
-        if (url == null) {
-            return null;
-        }
-
-        return URLDecoder.decode(url, StandardCharsets.UTF_8);
+    @Override
+    public Response depositMultipart(FormDataMultiPart formDataMultiPart,
+        String collectionId,
+        HttpHeaders headers
+    ) {
+        return null;
     }
 
     @Override
-    public Response depositAnything(InputStream inputStream, HttpHeaders headers) {
+    public Response depositAtom(String collectionId, HttpHeaders headers) {
+        return null;
+    }
+
+
+    @Override
+    public Response depositAnything(InputStream inputStream,
+        String collectionId,
+        HttpHeaders headers
+    ) {
         var contentType = getContentType(headers.getHeaderString("content-type"));
         var slug = decodeURL(headers.getHeaderString("slug"));
         var inProgress = getInProgress(headers.getHeaderString("in-progress"));
@@ -86,37 +103,36 @@ public class CollectionHandlerImpl implements CollectionHandler {
         deposit.setPackaging(packaging);
         deposit.setMimeType(contentType.toString());
         deposit.setContentLength(filesize);
-        deposit.setId(UUID.randomUUID().toString());
-        deposit.setSlug(slug);
+        deposit.setId(UUID.randomUUID()
+            .toString());
         deposit.setInProgress(inProgress);
-
-        System.out.println("DEPOSIT: " + deposit);
+        // Not supported right now because it is unused
+//        deposit.setSlug(slug);
 
         try {
-            var payloadPath = depositManager.storeDepositContent(deposit, inputStream);
-            depositManager.createDeposit(deposit, payloadPath);
-        }
-        catch (IOException e) {
+            var payloadPath = depositHandler.storeDepositContent(deposit, inputStream);
+
+            var checksum = checksumCalculator.calculateMD5Checksum(payloadPath);
+
+            if (!checksum.equals(deposit.getMd5())) {
+                System.out.println("CHECKSUM: " + checksum);
+                throw new Exception("Checksum does not match");
+            }
+
+            var properties = depositHandler.createDeposit(deposit, payloadPath);
+            var entry = depositReceiptFactory.createDepositReceipt(deposit, properties);
+
+            return Response.status(Response.Status.CREATED)
+                .entity(entry)
+                .build();
+
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
-        var element = new Entry();
-        element.setId("TESTID");
-        element.setTitle("TITLE");
-        element.setPackaging(deposit.getPackaging());
-        element.getLinks()
-            .add(new Link(URI.create("http://www.swordserver.ac.uk/col1/mydeposit/package.zip"),
-                "http://purl.org/net/sword/terms/originalDeposit", "application/zip"));
-
-        element.getLinks()
-            .addAll(List.of(new Link(URI.create("http://localhost:20312/collection/abc"), "http://purl.org/net/sword/terms/statement",
-                    "application/atom+xml;type=feed"),
-                new Link(URI.create("http://localhost:20312/collection/abc"), "http://purl.org/net/sword/terms/statement",
-                    "application/rdf+xml")));
-
-        return Response.status(Response.Status.CREATED)
-            .entity(element)
+        return Response.status(Status.INTERNAL_SERVER_ERROR)
             .build();
+
     }
 
     String generateMD5Hash(Path path) {
@@ -133,8 +149,7 @@ public class CollectionHandlerImpl implements CollectionHandler {
 
             return DatatypeConverter.printHexBinary(md.digest())
                 .toLowerCase(Locale.ROOT);
-        }
-        catch (NoSuchAlgorithmException | IOException e) {
+        } catch (NoSuchAlgorithmException | IOException e) {
             e.printStackTrace();
         }
 
@@ -165,8 +180,7 @@ public class CollectionHandlerImpl implements CollectionHandler {
             if (header != null) {
                 return Long.parseLong(header);
             }
-        }
-        catch (NumberFormatException ignored) {
+        } catch (NumberFormatException ignored) {
 
         }
 
@@ -180,11 +194,9 @@ public class CollectionHandlerImpl implements CollectionHandler {
 
         if ("true".equals(header)) {
             return true;
-        }
-        else if ("false".equals(header)) {
+        } else if ("false".equals(header)) {
             return false;
-        }
-        else {
+        } else {
             // TODO throw some exception
             return false;
         }
@@ -196,5 +208,13 @@ public class CollectionHandlerImpl implements CollectionHandler {
         }
 
         return MediaType.valueOf(contentType);
+    }
+
+    private String decodeURL(String url) {
+        if (url == null) {
+            return null;
+        }
+
+        return URLDecoder.decode(url, StandardCharsets.UTF_8);
     }
 }

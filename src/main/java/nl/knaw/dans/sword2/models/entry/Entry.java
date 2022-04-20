@@ -14,26 +14,47 @@
  * limitations under the License.
  */
 
-package nl.knaw.dans.sword2.models;
+package nl.knaw.dans.sword2.models.entry;
 
+import java.util.ArrayList;
+import java.util.List;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
-import java.util.ArrayList;
-import java.util.List;
 
 @XmlRootElement(name = "entry")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Entry {
+
     @XmlElement
     private String title;
     @XmlElement
     private String id;
     @XmlElement(name = "link")
     private List<Link> links = new ArrayList<>();
-    @XmlElement(namespace = "http://purl.org/net/sword/")
+    @XmlElement(namespace = "http://purl.org/net/sword/terms/")
     private String packaging;
+    @XmlElement(namespace = "http://purl.org/net/sword/terms/")
+    private String treatment;
+    @XmlElement(namespace = "http://purl.org/net/sword/terms/")
+    private String verboseDescription;
+
+    public String getTreatment() {
+        return treatment;
+    }
+
+    public void setTreatment(String treatment) {
+        this.treatment = treatment;
+    }
+
+    public String getVerboseDescription() {
+        return verboseDescription;
+    }
+
+    public void setVerboseDescription(String verboseDescription) {
+        this.verboseDescription = verboseDescription;
+    }
 
     public String getPackaging() {
         return packaging;
@@ -65,5 +86,9 @@ public class Entry {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public void addLink(Link link) {
+        this.links.add(link);
     }
 }

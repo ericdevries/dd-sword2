@@ -28,6 +28,15 @@ public class DepositProperties {
     private String stateDescription;
     private String bagStoreBagName;
     private String dataverseSwordToken;
+    private String md5;
+
+    public String getMd5() {
+        return md5;
+    }
+
+    public void setMd5(String md5) {
+        this.md5 = md5;
+    }
 
     public String getDepositorUserId() {
         return depositorUserId;
@@ -103,9 +112,12 @@ public class DepositProperties {
 
     @Override
     public String toString() {
-        return "DepositProperties{" + "bagStoreBagId='" + bagStoreBagId + '\'' + ", dataverseBagId='" + dataverseBagId + '\''
-                + ", creationTimestamp='" + creationTimestamp + '\'' + ", depositOrigin='" + depositOrigin + '\'' + ", depositorUserId='"
-                + depositorUserId + '\'' + ", state=" + state + ", stateDescription='" + stateDescription + '\'' + ", bagStoreBagName='"
-                + bagStoreBagName + '\'' + ", dataverseSwordToken='" + dataverseSwordToken + '\'' + '}';
+        return "DepositProperties{" + "bagStoreBagId='" + bagStoreBagId + '\''
+            + ", dataverseBagId='" + dataverseBagId + '\''
+            + ", creationTimestamp='" + creationTimestamp + '\'' + ", depositOrigin='"
+            + depositOrigin + '\'' + ", depositorUserId='"
+            + depositorUserId + '\'' + ", state=" + state + ", stateDescription='"
+            + stateDescription + '\'' + ", bagStoreBagName='"
+            + bagStoreBagName + '\'' + ", dataverseSwordToken='" + dataverseSwordToken + '\'' + '}';
     }
 }

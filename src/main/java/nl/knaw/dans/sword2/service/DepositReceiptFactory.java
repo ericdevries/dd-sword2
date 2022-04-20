@@ -16,18 +16,10 @@
 package nl.knaw.dans.sword2.service;
 
 import nl.knaw.dans.sword2.Deposit;
-import nl.knaw.dans.sword2.DepositState;
-import nl.knaw.dans.sword2.config.Sword2Config;
+import nl.knaw.dans.sword2.models.entry.Entry;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Path;
+public interface DepositReceiptFactory {
 
-public interface DepositManager {
+    Entry createDepositReceipt(Deposit deposit, DepositProperties depositProperties);
 
-    Path storeDepositContent(Deposit deposit, InputStream inputStream) throws IOException;
-
-    void createDeposit(Deposit deposit, Path payload) throws IOException;
-
-    void setDepositState(Deposit deposit, DepositState state);
 }

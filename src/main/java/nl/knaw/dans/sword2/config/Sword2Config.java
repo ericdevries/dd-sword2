@@ -16,17 +16,17 @@
 package nl.knaw.dans.sword2.config;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import nl.knaw.dans.lib.util.ExecutorServiceFactory;
-import nl.knaw.dans.sword2.config.converter.StringByteSizeConverter;
-
-import javax.validation.Valid;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
+import javax.validation.Valid;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+import nl.knaw.dans.lib.util.ExecutorServiceFactory;
+import nl.knaw.dans.sword2.config.converter.StringByteSizeConverter;
 
 public class Sword2Config {
+
     @Valid
     @NotNull
     private URI baseUrl;

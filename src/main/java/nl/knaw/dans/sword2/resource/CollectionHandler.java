@@ -15,32 +15,48 @@
  */
 package nl.knaw.dans.sword2.resource;
 
-import nl.knaw.dans.sword2.models.Entry;
 
+import java.io.InputStream;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.io.InputStream;
+import nl.knaw.dans.sword2.models.entry.Entry;
+import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 
 @Path("/collection/{id}")
 public interface CollectionHandler {
-    //    @POST
-    //    @Consumes({"application/json"})
-    //    @Produces({"application/json"})
 
     @GET
     @Produces(MediaType.APPLICATION_XML)
     Entry getDeposit(@Context HttpHeaders headers);
 
+
+    @POST
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.APPLICATION_ATOM_XML)
+    Response depositMultipart(FormDataMultiPart formDataMultiPart,
+        @PathParam("id") String collectionId,
+        @Context HttpHeaders headers
+    );
+
+    @POST
+    @Consumes(MediaType.APPLICATION_ATOM_XML)
+    @Produces(MediaType.APPLICATION_ATOM_XML)
+    Response depositAtom(@PathParam("id") String collectionId, @Context HttpHeaders headers);
+
     @POST
     @Consumes()
-    @Produces(MediaType.APPLICATION_XML)
-    Response depositAnything(InputStream inputStream, @Context HttpHeaders headers);
+    @Produces(MediaType.APPLICATION_ATOM_XML)
+    Response depositAnything(InputStream inputStream,
+        @PathParam("id") String collectionId,
+        @Context HttpHeaders headers
+    );
 
 }

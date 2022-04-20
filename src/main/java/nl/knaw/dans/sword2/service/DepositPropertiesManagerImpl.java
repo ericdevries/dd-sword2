@@ -92,6 +92,7 @@ public class DepositPropertiesManagerImpl implements DepositPropertiesManager {
             // loading of the configuration file failed
             cex.printStackTrace();
         }
+
     }
 
     DepositProperties mapToDepositProperties(Configuration config) {
