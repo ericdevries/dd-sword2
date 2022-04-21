@@ -34,6 +34,9 @@ import javax.ws.rs.core.Response.Status;
 import javax.xml.bind.DatatypeConverter;
 import nl.knaw.dans.sword2.Deposit;
 import nl.knaw.dans.sword2.UriRegistry;
+import nl.knaw.dans.sword2.exceptions.HashMismatchException;
+import nl.knaw.dans.sword2.exceptions.InvalidContentDispositionException;
+import nl.knaw.dans.sword2.exceptions.NotEnoughDiskSpaceException;
 import nl.knaw.dans.sword2.models.entry.Entry;
 import nl.knaw.dans.sword2.service.ChecksumCalculator;
 import nl.knaw.dans.sword2.service.DepositHandler;
@@ -111,14 +114,6 @@ public class CollectionHandlerImpl implements CollectionHandler {
 
         try {
             var payloadPath = depositHandler.storeDepositContent(deposit, inputStream);
-
-            var checksum = checksumCalculator.calculateMD5Checksum(payloadPath);
-
-            if (!checksum.equals(deposit.getMd5())) {
-                System.out.println("CHECKSUM: " + checksum);
-                throw new Exception("Checksum does not match");
-            }
-
             var properties = depositHandler.createDeposit(deposit, payloadPath);
             var entry = depositReceiptFactory.createDepositReceipt(deposit, properties);
 
@@ -127,6 +122,15 @@ public class CollectionHandlerImpl implements CollectionHandler {
                 .build();
 
         } catch (Exception e) {
+            e.printStackTrace();
+        }
+        catch (NotEnoughDiskSpaceException e) {
+            e.printStackTrace();
+        }
+        catch (HashMismatchException e) {
+            e.printStackTrace();
+        }
+        catch (InvalidContentDispositionException e) {
             e.printStackTrace();
         }
 

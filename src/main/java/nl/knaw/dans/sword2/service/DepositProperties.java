@@ -29,6 +29,15 @@ public class DepositProperties {
     private String bagStoreBagName;
     private String dataverseSwordToken;
     private String md5;
+    private String contentType;
+
+    public String getContentType() {
+        return contentType;
+    }
+
+    public void setContentType(String contentType) {
+        this.contentType = contentType;
+    }
 
     public String getMd5() {
         return md5;

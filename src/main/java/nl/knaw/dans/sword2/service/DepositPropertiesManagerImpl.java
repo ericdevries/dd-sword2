@@ -38,17 +38,13 @@ public class DepositPropertiesManagerImpl implements DepositPropertiesManager {
         this.sword2Config = sword2Config;
     }
 
-    private Path getDepositPath(Deposit deposit) {
-        var id = deposit.getCanonicalId();
-        var rootDir = sword2Config.getCollections().get(0).getDeposits(); //.resolve(Path.of(id, FILENAME));
-        // TODO implement logic for archived (see easy-sword2)
-        var propertiesFile = rootDir.resolve(Path.of(id, FILENAME));
-
-        return propertiesFile;
+    private Path getDepositPath(Path path) {
+        return path.resolve(FILENAME);
     }
+
     @Override
-    public DepositProperties getProperties(Deposit deposit) {
-        var propertiesFile = getDepositPath(deposit);
+    public DepositProperties getProperties(Path path, Deposit deposit) {
+        var propertiesFile = getDepositPath(path);
 
         var params = new Parameters();
         var paramConfig = params.properties()
@@ -72,9 +68,9 @@ public class DepositPropertiesManagerImpl implements DepositPropertiesManager {
     }
 
     @Override
-    public void saveProperties(Deposit deposit, DepositProperties properties) {
+    public void saveProperties(Path path, Deposit deposit, DepositProperties properties) {
         // TODO implement logic for archived (see easy-sword2)
-        var propertiesFile = getDepositPath(deposit);
+        var propertiesFile = getDepositPath(path);
 
         var params = new Parameters();
         var paramConfig = params.properties()

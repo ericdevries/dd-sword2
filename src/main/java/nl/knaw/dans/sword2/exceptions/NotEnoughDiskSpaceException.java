@@ -13,15 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.sword2.service;
+package nl.knaw.dans.sword2.exceptions;
 
-import nl.knaw.dans.sword2.Deposit;
-
-import java.nio.file.Path;
-
-public interface DepositPropertiesManager {
-
-    DepositProperties getProperties(Path path, Deposit deposit);
-
-    void saveProperties(Path path, Deposit deposit, DepositProperties properties);
+public class NotEnoughDiskSpaceException extends Throwable {
+    public NotEnoughDiskSpaceException(String msg) {
+        super(msg);
+    }
 }

@@ -15,6 +15,9 @@
  */
 package nl.knaw.dans.sword2.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,6 +26,7 @@ import java.nio.file.Path;
 
 @Singleton
 public class FileServiceImpl implements FileService {
+    private static final Logger log = LoggerFactory.getLogger(FileServiceImpl.class);
 
     @Override
     public void ensureDirectoriesExist(Path directory) throws IOException {
@@ -50,7 +54,9 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public String calculateMD5Hash(Path path) {
-        return null;
+    public long getAvailableDiskSpace(Path path) throws IOException {
+        var fileStore = Files.getFileStore(path);
+        return fileStore.getUsableSpace();
     }
+
 }

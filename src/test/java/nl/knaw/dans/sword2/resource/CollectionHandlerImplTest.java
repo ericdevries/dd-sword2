@@ -66,12 +66,12 @@ class CollectionHandlerImplTest {
 
     @AfterEach
     void tearDown() throws IOException {
-//        FileUtils.deleteDirectory(Path.of("data/tmp")
-//            .toFile());
+        FileUtils.deleteDirectory(Path.of("data/tmp")
+            .toFile());
     }
 
     @Test
-    void testZipDepositWithoutSlug() throws IOException, JAXBException, ConfigurationException {
+    void testZipDepositDraftState() throws IOException, JAXBException, ConfigurationException {
         var path = getClass().getResource("/zips/audiences.zip");
         var url = String.format("http://localhost:%s/collection/1", EXT.getLocalPort());
 
@@ -82,16 +82,18 @@ class CollectionHandlerImplTest {
             .request()
             .header("content-type", "application/zip")
             .header("content-md5", "bc27e20467a773501a4ae37fb85a9c3f")
+            .header("content-disposition", "attachment; filename=bag.zip")
+            .header("in-progress", "true")
             .post(Entity.entity(path.openStream(), MediaType.valueOf("application/zip")));
 
         assertEquals(201, result.getStatus());
 
-        var paths = Files.walk(Path.of("data/tmp/1/deposits/"))
+        var paths = Files.walk(Path.of("data/tmp/1/uploads/"))
             .collect(Collectors.toList());
         var firstPath = paths.get(1); // the path at 0 is the directory itself, we need the first child
 
         assertTrue(Files.exists(firstPath.resolve("deposit.properties")));
-
+        assertTrue(Files.exists(firstPath.resolve("bag.zip")));
 
         var params = new Parameters();
         var paramConfig = params.properties()
@@ -112,26 +114,50 @@ class CollectionHandlerImplTest {
         assertEquals("Deposit is open for additional data", config.getString("state.description"));
 //        assertEquals("AUDIENCE", config.getString("bag-store.bag-name"));
 
-        var id = config.getString("bag-store.bag-id");
-        assertEquals("sword:" + id, config.getString("dataverse.sword-token"));
     }
-//
-//    @Test
-//    void testZipDepositWithSlug() throws IOException {
-//        var path = getClass().getResource("/zips/audiences.zip");
-//        var url = String.format("http://localhost:%s/collection/1", EXT.getLocalPort());
-//
-//        assert path != null;
-//
-//        var result = EXT.client()
-//            .target(url)
-//            .request()
-//            .header("content-type", "application/zip")
-//            .header("slug", "the_slug")
-//            .post(Entity.entity(path.openStream(), MediaType.valueOf("application/zip")));
-//
-//        var targetPath = Path.of("data/tmp/1/deposits/the_slug");
-//        assertTrue(Files.exists(targetPath), "Expected path not found");
-//        assertTrue(Files.exists(targetPath.resolve("deposit.properties")));
-//    }
+
+    @Test
+    void testZipDepositUploaded() throws IOException, JAXBException, ConfigurationException {
+        var path = getClass().getResource("/zips/audiences.zip");
+        var url = String.format("http://localhost:%s/collection/1", EXT.getLocalPort());
+
+        assert path != null;
+
+        var result = EXT.client()
+            .target(url)
+            .request()
+            .header("content-type", "application/zip")
+            .header("content-md5", "bc27e20467a773501a4ae37fb85a9c3f")
+            .header("in-progress", "false")
+            .header("content-disposition", "attachment; filename=bag.zip")
+            .post(Entity.entity(path.openStream(), MediaType.valueOf("application/zip")));
+
+        assertEquals(201, result.getStatus());
+
+        var paths = Files.walk(Path.of("data/tmp/1/uploads/"))
+            .collect(Collectors.toList());
+        var firstPath = paths.get(1); // the path at 0 is the directory itself, we need the first child
+
+        assertTrue(Files.exists(firstPath.resolve("deposit.properties")));
+
+        var params = new Parameters();
+        var paramConfig = params.properties()
+            .setFileName(firstPath.resolve("deposit.properties").toString());
+
+        var builder = new FileBasedConfigurationBuilder<FileBasedConfiguration>(
+            PropertiesConfiguration.class, null, true).configure(
+            paramConfig);
+
+        var config = builder.getConfiguration();
+
+        assertNotNull(config.getString("bag-store.bag-id"));
+        assertNotNull(config.getString("dataverse.bag-id"));
+        assertNotNull(config.getString("creation.timestamp"));
+        assertEquals("SWORD2", config.getString("deposit.origin"));
+        assertEquals("UPLOADED", config.getString("state.label"));
+        //        assertNotNull(config.getString("deposit.userId"));
+        assertEquals("Deposit is open for additional data", config.getString("state.description"));
+        //        assertEquals("AUDIENCE", config.getString("bag-store.bag-name"));
+
+    }
 }

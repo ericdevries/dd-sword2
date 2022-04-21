@@ -16,21 +16,22 @@
 package nl.knaw.dans.sword2.service;
 
 import nl.knaw.dans.sword2.Deposit;
-import nl.knaw.dans.sword2.DepositState;
+import nl.knaw.dans.sword2.exceptions.HashMismatchException;
+import nl.knaw.dans.sword2.exceptions.InvalidContentDispositionException;
+import nl.knaw.dans.sword2.exceptions.NotEnoughDiskSpaceException;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.security.NoSuchAlgorithmException;
 
 public interface DepositHandler {
 
     // TODO move to different class
-    Path storeDepositContent(Deposit deposit, InputStream inputStream) throws IOException;
+    Path storeDepositContent(Deposit deposit, InputStream inputStream)
+        throws IOException, NotEnoughDiskSpaceException, NoSuchAlgorithmException, HashMismatchException, InvalidContentDispositionException;
 
     DepositProperties createDeposit(Deposit deposit, Path payload) throws IOException;
 
-    void setDepositState(Deposit deposit, DepositState state);
-
-    DepositProperties getDepositProperties(Deposit deposit);
 
 }

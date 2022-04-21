@@ -23,13 +23,11 @@ public interface FileService {
 
     void ensureDirectoriesExist(Path directory) throws IOException;
 
-
     long getFileSize(Path path);
 
     Path copyFile(InputStream inputStream, Path target) throws IOException;
 
     Path copyFile(Path source, Path target) throws IOException;
 
-    // maybe a separate service?
-    String calculateMD5Hash(Path path);
+    long getAvailableDiskSpace(Path path) throws IOException;
 }

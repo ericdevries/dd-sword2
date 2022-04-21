@@ -60,7 +60,7 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
         var depositManager = new DepositHandlerImpl(configuration.getSword2(),
             bagExtractor,
             fileService,
-            depositPropertiesManager);
+            depositPropertiesManager, checksumCalculator);
 
         var depositReceiptFactory = new DepositReceiptFactoryImpl(configuration.getSword2()
             .getBaseUrl());
