@@ -101,6 +101,7 @@ public class DepositPropertiesManagerImpl implements DepositPropertiesManager {
         depositProperties.setStateDescription(config.getString("state.description"));
         depositProperties.setBagStoreBagName(config.getString("bag-store.bag-name"));
         depositProperties.setDataverseSwordToken(config.getString("dataverse.sword-token"));
+        depositProperties.setContentType(config.getString("easy-sword2.client-message.content-type"));
 
         if (config.getString("state.label") != null) {
             depositProperties.setState(DepositState.valueOf(config.getString("state.label")));
@@ -120,5 +121,11 @@ public class DepositPropertiesManagerImpl implements DepositPropertiesManager {
         config.setProperty("state.description", depositProperties.getStateDescription());
         config.setProperty("bag-store.bag-name", depositProperties.getBagStoreBagName());
         config.setProperty("dataverse.sword-token", depositProperties.getDataverseSwordToken());
+
+        if (depositProperties.getContentType() != null) {
+            config.setProperty("easy-sword2.client-message.content-type", depositProperties.getContentType());
+        } else {
+            config.clearProperty("easy-sword2.client-message.content-type");
+        }
     }
 }

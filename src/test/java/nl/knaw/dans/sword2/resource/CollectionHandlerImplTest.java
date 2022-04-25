@@ -66,8 +66,8 @@ class CollectionHandlerImplTest {
 
     @AfterEach
     void tearDown() throws IOException {
-        FileUtils.deleteDirectory(Path.of("data/tmp")
-            .toFile());
+//        FileUtils.deleteDirectory(Path.of("data/tmp")
+//            .toFile());
     }
 
     @Test
@@ -156,7 +156,7 @@ class CollectionHandlerImplTest {
         assertEquals("SWORD2", config.getString("deposit.origin"));
         assertEquals("UPLOADED", config.getString("state.label"));
         //        assertNotNull(config.getString("deposit.userId"));
-        assertEquals("Deposit is open for additional data", config.getString("state.description"));
+        assertEquals("Deposit upload has been completed", config.getString("state.description"));
         //        assertEquals("AUDIENCE", config.getString("bag-store.bag-name"));
 
     }

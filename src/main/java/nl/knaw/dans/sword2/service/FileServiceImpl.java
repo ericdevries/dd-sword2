@@ -15,14 +15,21 @@
  */
 package nl.knaw.dans.sword2.service;
 
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Singleton;
+import java.io.BufferedOutputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Singleton
 public class FileServiceImpl implements FileService {
@@ -57,6 +64,42 @@ public class FileServiceImpl implements FileService {
     public long getAvailableDiskSpace(Path path) throws IOException {
         var fileStore = Files.getFileStore(path);
         return fileStore.getUsableSpace();
+    }
+
+    @Override
+    public Stream<Path> listFiles(Path path) throws IOException {
+        return Files.list(path).filter(Files::isRegularFile);
+    }
+
+    @Override
+    public List<Path> listDirectories(Path path) throws IOException {
+        return Files.list(path).filter(Files::isDirectory).collect(Collectors.toList());
+    }
+
+    @Override
+    public void deleteFile(Path file) throws IOException {
+        Files.deleteIfExists(file);
+    }
+
+    @Override
+    public void move(Path sourcePath, Path targetPath) throws IOException {
+        ensureDirectoriesExist(targetPath.getParent());
+        Files.move(sourcePath, targetPath);
+    }
+
+    @Override
+    public Path mergeFiles(List<Path> files, Path target) throws IOException {
+        try (var output = new BufferedOutputStream(new FileOutputStream(target.toFile(), true))) {
+            for (var file: files) {
+                IOUtils.copy(Files.newInputStream(file), output);
+            }
+        } finally {
+            for (var file: files) {
+                Files.deleteIfExists(file);
+            }
+        }
+
+        return target;
     }
 
 }

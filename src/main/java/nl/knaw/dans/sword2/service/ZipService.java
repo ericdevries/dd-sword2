@@ -27,4 +27,6 @@ public interface ZipService {
     void extractZipFileWithFileMapping(Path zipFile, Path targetPath, Map<String, String> fileMapping) throws IOException;
 
     List<String> getFilesInZip(Path zipFile) throws IOException;
+
+    long getExtractedSize(Path zipFile) throws IOException;
 }

@@ -15,9 +15,12 @@
  */
 package nl.knaw.dans.sword2.service;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Stream;
 
 public interface FileService {
 
@@ -30,4 +33,14 @@ public interface FileService {
     Path copyFile(Path source, Path target) throws IOException;
 
     long getAvailableDiskSpace(Path path) throws IOException;
+
+    Stream<Path> listFiles(Path path) throws IOException;
+
+    List<Path> listDirectories(Path path) throws IOException;
+
+    void deleteFile(Path file) throws IOException;
+
+    void move(Path sourcePath, Path targetPath) throws IOException;
+
+    Path mergeFiles(List<Path> files, Path target) throws IOException;
 }

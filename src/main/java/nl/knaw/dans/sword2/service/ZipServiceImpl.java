@@ -66,6 +66,12 @@ public class ZipServiceImpl implements ZipService {
         return getFilesInZip(new ZipFile(path.toFile()));
     }
 
+    @Override
+    public long getExtractedSize(Path zipFile) throws IOException {
+        var file = new ZipFile(zipFile.toFile());
+        return file.stream().map(ZipEntry::getSize).reduce(0L, Long::sum);
+    }
+
     List<String> getFilesInZip(ZipFile zipFile) {
         return zipFile.stream().map(ZipEntry::getName).filter(e -> !e.endsWith("/")).collect(Collectors.toList());
     }

@@ -56,7 +56,7 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
 
         var zipService = new ZipServiceImpl(fileService);
 
-        var bagExtractor = new BagExtractorImpl(zipService);
+        var bagExtractor = new BagExtractorImpl(zipService, fileService);
         var depositManager = new DepositHandlerImpl(configuration.getSword2(),
             bagExtractor,
             fileService,

@@ -90,7 +90,6 @@ public class CollectionHandlerImpl implements CollectionHandler {
         HttpHeaders headers
     ) {
         var contentType = getContentType(headers.getHeaderString("content-type"));
-        var slug = decodeURL(headers.getHeaderString("slug"));
         var inProgress = getInProgress(headers.getHeaderString("in-progress"));
 
         var contentDisposition = headers.getHeaderString("content-disposition");
@@ -109,8 +108,6 @@ public class CollectionHandlerImpl implements CollectionHandler {
         deposit.setId(UUID.randomUUID()
             .toString());
         deposit.setInProgress(inProgress);
-        // Not supported right now because it is unused
-//        deposit.setSlug(slug);
 
         try {
             var payloadPath = depositHandler.storeDepositContent(deposit, inputStream);
