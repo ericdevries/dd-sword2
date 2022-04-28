@@ -91,4 +91,16 @@ public class Entry {
     public void addLink(Link link) {
         this.links.add(link);
     }
+
+    @Override
+    public String toString() {
+        return "Entry{" +
+            "title='" + title + '\'' +
+            ", id='" + id + '\'' +
+            ", links=" + links +
+            ", packaging='" + packaging + '\'' +
+            ", treatment='" + treatment + '\'' +
+            ", verboseDescription='" + verboseDescription + '\'' +
+            '}';
+    }
 }

@@ -17,6 +17,7 @@ package nl.knaw.dans.sword2.service;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 public interface ChecksumCalculator {
@@ -24,4 +25,6 @@ public interface ChecksumCalculator {
     String calculateMD5Checksum(Path path) throws IOException, NoSuchAlgorithmException;
     String calculateSHA1Checksum(Path path) throws NoSuchAlgorithmException, IOException;
 
+    String calculateMD5Checksum(MessageDigest messageDigest);
+    MessageDigest createMD5MessageDigest() throws NoSuchAlgorithmException;
 }

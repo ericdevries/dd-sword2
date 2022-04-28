@@ -31,7 +31,7 @@ public class DepositReceiptFactoryImpl implements DepositReceiptFactory {
     }
 
     @Override
-    public Entry createDepositReceipt(Deposit deposit, DepositProperties depositProperties) {
+    public Entry createDepositReceipt(Deposit deposit) {
         var id = deposit.getCanonicalId();
         var editURI = baseUrl.resolve("container/" + id);
         var statementURI = baseUrl.resolve("statement/" + id);
@@ -48,8 +48,7 @@ public class DepositReceiptFactoryImpl implements DepositReceiptFactory {
         entry.addLink(new Link(mediaURI, "edit-media", null));
         entry.setTreatment("[1] unpacking [2] verifying integrity [3] storing persistently");
         entry.setVerboseDescription(String.format("received successfully: %s; MD5: %s",
-            "TODO_filename.zip",
-            depositProperties.getMd5()));
+            deposit.getFilename(), deposit.getMd5()));
 
         return entry;
     }

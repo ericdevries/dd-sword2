@@ -13,48 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.sword2.models.entry;
+package nl.knaw.dans.sword2.models.statement;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
-import java.net.URI;
 
-@XmlRootElement(name = "link")
+@XmlRootElement(name = "content")
 @XmlAccessorType(XmlAccessType.FIELD)
-public class Link {
+public class FeedContent {
+
     @XmlAttribute
-    private URI href;
-    @XmlAttribute
-    private String rel;
+    private String src;
     @XmlAttribute
     private String type;
 
-    public Link() {
-
-    }
-
-    public Link(URI href, String rel, String type) {
-        this.href = href;
-        this.rel = rel;
+    public FeedContent(String src, String type) {
+        this.src = src;
         this.type = type;
     }
 
-    public URI getHref() {
-        return href;
+    public FeedContent() {
+
     }
 
-    public void setHref(URI href) {
-        this.href = href;
+    public String getSrc() {
+        return src;
     }
 
-    public String getRel() {
-        return rel;
-    }
-
-    public void setRel(String rel) {
-        this.rel = rel;
+    public void setSrc(String src) {
+        this.src = src;
     }
 
     public String getType() {
@@ -67,9 +56,8 @@ public class Link {
 
     @Override
     public String toString() {
-        return "Link{" +
-            "href=" + href +
-            ", rel='" + rel + '\'' +
+        return "FeedContent{" +
+            "src='" + src + '\'' +
             ", type='" + type + '\'' +
             '}';
     }

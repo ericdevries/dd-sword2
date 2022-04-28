@@ -15,14 +15,7 @@
  */
 package nl.knaw.dans.sword2.service;
 
-import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
-import nl.knaw.dans.sword2.exceptions.InvalidPartialFileException;
+public interface StatementFactory {
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.List;
-
-public interface BagExtractor {
-    void extractBag(Path path, String mimeType, boolean filePathMapping) throws Exception, InvalidDepositException, InvalidPartialFileException;
 
 }

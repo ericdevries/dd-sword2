@@ -15,34 +15,28 @@
  */
 package nl.knaw.dans.sword2.resource;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Locale;
-import java.util.UUID;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-import javax.xml.bind.DatatypeConverter;
-import nl.knaw.dans.sword2.Deposit;
 import nl.knaw.dans.sword2.UriRegistry;
+import nl.knaw.dans.sword2.auth.Depositor;
+import nl.knaw.dans.sword2.exceptions.CollectionNotFoundException;
 import nl.knaw.dans.sword2.exceptions.HashMismatchException;
-import nl.knaw.dans.sword2.exceptions.InvalidContentDispositionException;
 import nl.knaw.dans.sword2.exceptions.NotEnoughDiskSpaceException;
 import nl.knaw.dans.sword2.models.entry.Entry;
 import nl.knaw.dans.sword2.service.ChecksumCalculator;
 import nl.knaw.dans.sword2.service.DepositHandler;
 import nl.knaw.dans.sword2.service.DepositReceiptFactory;
 import org.apache.commons.fileupload.ParameterParser;
-import org.glassfish.jersey.media.multipart.FormDataMultiPart;
+import org.glassfish.jersey.media.multipart.FormDataParam;
+import org.glassfish.jersey.media.multipart.MultiPart;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+import java.io.IOException;
+import java.io.InputStream;
 
 @Singleton
 public class CollectionHandlerImpl implements CollectionHandler {
@@ -71,24 +65,90 @@ public class CollectionHandlerImpl implements CollectionHandler {
     }
 
     @Override
-    public Response depositMultipart(FormDataMultiPart formDataMultiPart,
+    public Response depositMultipart(MultiPart multiPart,
         String collectionId,
-        HttpHeaders headers
+        HttpHeaders headers,
+        Depositor depositor
     ) {
+
+        String filename = null;
+        String hash = null;
+        String packaging = null;
+        long contentLength = -1;
+        String mimeType = null;
+        InputStream inputStream = null;
+
+        var inProgress = getInProgress(headers.getHeaderString("in-progress"));
+
+        for (var part : multiPart.getBodyParts()) {
+            System.out.println("PART :" + part);
+            var name = part.getContentDisposition().getParameters().get("name");
+
+
+            if ("atom".equals(name)) {
+                // TODO get atom part
+//                InputStream entryPart = item.getInputStream();
+//                Abdera abdera = new Abdera();
+//                Parser parser = abdera.getParser();
+//                Document<Entry> entryDoc = parser.parse(entryPart);
+//                Entry entry = entryDoc.getRoot();
+//                deposit.setEntry(entry);
+            }
+            else if ("payload".equals(name)) {
+                filename = part.getContentDisposition().getFileName();
+                hash = part.getHeaders().getFirst("content-md5");
+                packaging = part.getHeaders().getFirst("packaging");
+                contentLength = part.getContentDisposition().getSize();
+                mimeType = "application/octet-stream";
+                inputStream = part.getEntityAs(InputStream.class);
+
+                if (part.getMediaType() != null) {
+                    mimeType = part.getMediaType().toString().split(";")[0];
+                }
+            }
+        }
+
+        try {
+            var deposit = depositHandler.createDepositWithPayload(
+                collectionId, depositor, inProgress, MediaType.valueOf(mimeType), hash, packaging, filename, contentLength, inputStream);
+
+            var entry = depositReceiptFactory.createDepositReceipt(deposit);
+
+            return Response.status(Response.Status.CREATED)
+                .entity(entry)
+                .build();
+
+        }
+        catch (CollectionNotFoundException e) {
+            e.printStackTrace();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        catch (NotEnoughDiskSpaceException e) {
+            e.printStackTrace();
+        }
+        catch (HashMismatchException e) {
+            e.printStackTrace();
+        }
+
+
+        System.out.println("MULTIPART: " + multiPart);
         return null;
     }
 
     @Override
-    public Response depositAtom(String collectionId, HttpHeaders headers) {
+    public Response depositAtom(String collectionId, HttpHeaders headers, Depositor depositor) {
         return null;
     }
-
 
     @Override
     public Response depositAnything(InputStream inputStream,
         String collectionId,
-        HttpHeaders headers
+        HttpHeaders headers,
+        Depositor depositor
     ) {
+
         var contentType = getContentType(headers.getHeaderString("content-type"));
         var inProgress = getInProgress(headers.getHeaderString("in-progress"));
 
@@ -99,62 +159,31 @@ public class CollectionHandlerImpl implements CollectionHandler {
         var filename = getFilenameFromContentDisposition(contentDisposition, "filename");
         var filesize = getContentLength(headers.getHeaderString("content-length"));
 
-        var deposit = new Deposit();
-        deposit.setFilename(filename);
-        deposit.setMd5(md5);
-        deposit.setPackaging(packaging);
-        deposit.setMimeType(contentType.toString());
-        deposit.setContentLength(filesize);
-        deposit.setId(UUID.randomUUID()
-            .toString());
-        deposit.setInProgress(inProgress);
-
         try {
-            var payloadPath = depositHandler.storeDepositContent(deposit, inputStream);
-            var properties = depositHandler.createDeposit(deposit, payloadPath);
-            var entry = depositReceiptFactory.createDepositReceipt(deposit, properties);
+            var deposit = depositHandler.createDepositWithPayload(
+                collectionId, depositor, inProgress, contentType, md5, packaging, filename, filesize, inputStream);
+
+            var entry = depositReceiptFactory.createDepositReceipt(deposit);
 
             return Response.status(Response.Status.CREATED)
                 .entity(entry)
                 .build();
-
-        } catch (Exception e) {
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
         catch (NotEnoughDiskSpaceException e) {
+            throw new WebApplicationException(503);
+        }
+        catch (CollectionNotFoundException e) {
             e.printStackTrace();
         }
         catch (HashMismatchException e) {
             e.printStackTrace();
         }
-        catch (InvalidContentDispositionException e) {
-            e.printStackTrace();
-        }
-
         return Response.status(Status.INTERNAL_SERVER_ERROR)
             .build();
 
-    }
-
-    String generateMD5Hash(Path path) {
-        try {
-            var md = MessageDigest.getInstance("MD5");
-            var is = Files.newInputStream(path);
-            var buf = new byte[1024 * 8];
-
-            var bytesRead = 0;
-
-            while ((bytesRead = is.read(buf)) != -1) {
-                md.update(buf, 0, bytesRead);
-            }
-
-            return DatatypeConverter.printHexBinary(md.digest())
-                .toLowerCase(Locale.ROOT);
-        } catch (NoSuchAlgorithmException | IOException e) {
-            e.printStackTrace();
-        }
-
-        return null;
     }
 
     String getFilenameFromContentDisposition(String contentDisposition, String key) {
@@ -181,7 +210,8 @@ public class CollectionHandlerImpl implements CollectionHandler {
             if (header != null) {
                 return Long.parseLong(header);
             }
-        } catch (NumberFormatException ignored) {
+        }
+        catch (NumberFormatException ignored) {
 
         }
 
@@ -195,9 +225,11 @@ public class CollectionHandlerImpl implements CollectionHandler {
 
         if ("true".equals(header)) {
             return true;
-        } else if ("false".equals(header)) {
+        }
+        else if ("false".equals(header)) {
             return false;
-        } else {
+        }
+        else {
             // TODO throw some exception
             return false;
         }
@@ -211,11 +243,4 @@ public class CollectionHandlerImpl implements CollectionHandler {
         return MediaType.valueOf(contentType);
     }
 
-    private String decodeURL(String url) {
-        if (url == null) {
-            return null;
-        }
-
-        return URLDecoder.decode(url, StandardCharsets.UTF_8);
-    }
 }

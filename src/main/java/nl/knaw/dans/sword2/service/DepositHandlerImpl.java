@@ -17,21 +17,27 @@ package nl.knaw.dans.sword2.service;
 
 import nl.knaw.dans.sword2.Deposit;
 import nl.knaw.dans.sword2.DepositState;
+import nl.knaw.dans.sword2.auth.Depositor;
 import nl.knaw.dans.sword2.config.CollectionConfig;
 import nl.knaw.dans.sword2.config.Sword2Config;
+import nl.knaw.dans.sword2.exceptions.CollectionNotFoundException;
+import nl.knaw.dans.sword2.exceptions.DepositNotFoundException;
+import nl.knaw.dans.sword2.exceptions.DepositReadOnlyException;
 import nl.knaw.dans.sword2.exceptions.HashMismatchException;
-import nl.knaw.dans.sword2.exceptions.InvalidContentDispositionException;
 import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
+import nl.knaw.dans.sword2.exceptions.InvalidPartialFileException;
 import nl.knaw.dans.sword2.exceptions.NotEnoughDiskSpaceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.security.NoSuchAlgorithmException;
 import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -43,58 +49,102 @@ public class DepositHandlerImpl implements DepositHandler {
     private final FileService fileService;
     private final DepositPropertiesManager depositPropertiesManager;
     private final Sword2Config sword2Config;
-    private final ChecksumCalculator checksumCalculator;
+    private final CollectionManager collectionManager;
+    private final ExecutorService executorService;
+    private final UserManager userManager;
 
     public DepositHandlerImpl(Sword2Config sword2Config,
         BagExtractor bagExtractor,
         FileService fileService,
         DepositPropertiesManager depositPropertiesManager,
-        ChecksumCalculator checksumCalculator) {
+        CollectionManager collectionManager, ExecutorService executorService, UserManager userManager) {
         this.sword2Config = sword2Config;
         this.bagExtractor = bagExtractor;
         this.fileService = fileService;
         this.depositPropertiesManager = depositPropertiesManager;
-        this.checksumCalculator = checksumCalculator;
+        this.collectionManager = collectionManager;
+        this.executorService = executorService;
+        this.userManager = userManager;
     }
 
     @Override
-    public Path storeDepositContent(Deposit deposit, InputStream inputStream)
-        throws IOException, NotEnoughDiskSpaceException, NoSuchAlgorithmException, HashMismatchException, InvalidContentDispositionException {
-        assertFilenameIsNotEmpty(deposit);
+    public Deposit createDepositWithPayload(String collectionId, Depositor depositor, boolean inProgress, MediaType contentType, String hash, String packaging, String filename, long filesize,
+        InputStream inputStream)
+        throws CollectionNotFoundException, IOException, NotEnoughDiskSpaceException, HashMismatchException {
 
-        var collection = getCollection(deposit);
-        var tempPath = collection.getUploads()
-            .resolve(deposit.getId())
-            .resolve(deposit.getFilename());
+        var id = UUID.randomUUID().toString();
+        var collection = collectionManager.getCollectionByPath(collectionId, depositor);
 
+        // make sure the upload directory exists
         fileService.ensureDirectoriesExist(collection.getUploads());
+        assertTempDirHasEnoughDiskspaceMarginForFile(collection.getUploads(), filesize);
 
-        assertTempDirHasEnoughDiskspaceMarginForFile(collection.getUploads(), deposit.getContentLength());
+        var path = collection.getUploads()
+            .resolve(id)
+            .resolve(filename);
 
-        log.debug("Storing deposit payload in {}", tempPath);
-        fileService.copyFile(inputStream, tempPath);
+        var depositFolder = path.getParent();
 
-        assertHashMatches(tempPath, deposit.getMd5());
+        // check if the hash matches the one provided by the user
+        var calculatedHash = fileService.copyFileWithMD5Hash(inputStream, path);
 
-        return tempPath;
+        if (hash == null || !hash.equals(calculatedHash)) {
+            throw new HashMismatchException(String.format("Hash %s does not match expected hash %s", calculatedHash, hash));
+        }
+
+        var deposit = new Deposit();
+        deposit.setId(id);
+        deposit.setCollectionId(collectionId);
+        deposit.setInProgress(inProgress);
+        deposit.setFilename(filename);
+        deposit.setMd5(calculatedHash);
+        deposit.setPackaging(packaging);
+        deposit.setContentLength(filesize);
+        deposit.setDepositor(depositor.getName());
+        deposit.setState(DepositState.DRAFT);
+        deposit.setStateDescription("Deposit is open for additional data");
+        deposit.setCreated(OffsetDateTime.now());
+        deposit.setMimeType(contentType.toString());
+
+        // now store these properties
+        // set state to draft
+        depositPropertiesManager.saveProperties(depositFolder, deposit);
+
+        startFinalizingDeposit(deposit);
+
+        return deposit;
     }
 
-    void assertFilenameIsNotEmpty(Deposit deposit) throws InvalidContentDispositionException {
-        if (deposit.getFilename() == null || "".equals(deposit.getFilename().strip())) {
-            throw new InvalidContentDispositionException("No file name provided");
-        }
-    }
+    @Override
+    public Deposit addPayloadToDeposit(String depositId, Depositor depositor, boolean inProgress, MediaType contentType, String hash, String packaging, String filename, long filesize,
+        InputStream inputStream) throws IOException, NotEnoughDiskSpaceException, HashMismatchException, DepositNotFoundException, DepositReadOnlyException, CollectionNotFoundException {
 
-    void assertHashMatches(Path path, String hash) throws HashMismatchException, IOException, NoSuchAlgorithmException {
-        var checksum = checksumCalculator.calculateMD5Checksum(path);
+        var deposit = getDeposit(depositId, depositor);
+        var path = deposit.getPath().resolve(filename);
 
-        if (!checksum.equals(hash)) {
-            throw new HashMismatchException(String.format("Hash %s does not match expected hash %s", checksum, hash));
+        assertTempDirHasEnoughDiskspaceMarginForFile(path.getParent(), filesize);
+
+        if (!DepositState.DRAFT.equals(deposit.getState())) {
+            throw new DepositReadOnlyException(String.format("Deposit with id %s is not writable", deposit.getId()));
         }
+
+        // check if the hash matches the one provided by the user
+        var calculatedHash = fileService.copyFileWithMD5Hash(inputStream, path);
+
+        if (hash == null || !hash.equals(calculatedHash)) {
+            throw new HashMismatchException(String.format("Hash %s does not match expected hash %s", calculatedHash, hash));
+        }
+
+        deposit.setInProgress(inProgress);
+        depositPropertiesManager.saveProperties(path.getParent(), deposit);
+
+        startFinalizingDeposit(deposit);
+        return deposit;
     }
 
     @Override
     public DepositProperties createDeposit(Deposit deposit, Path payload) throws IOException {
+        /*
         var collection = getCollection(deposit);
         var id = deposit.getCanonicalId();
         var path = getUploadPath(collection, id);
@@ -114,12 +164,50 @@ public class DepositHandlerImpl implements DepositHandler {
 
         depositPropertiesManager.saveProperties(path, deposit, props);
 
-        finalizeDeposit(deposit);
+        startFinalizingDeposit(deposit);
 
         return props;
+
+         */
+        return null;
     }
 
-    void finalizeDeposit(Deposit deposit) {
+    @Override
+    public Deposit getDeposit(String depositId, Depositor depositor) throws DepositNotFoundException {
+        var deposit = getDeposit(depositId);
+
+        if (depositor.getName().equals(deposit.getDepositor())) {
+            return deposit;
+        }
+
+        throw new DepositNotFoundException(String.format("Deposit with id %s could not be found", depositId));
+    }
+
+    Deposit getDeposit(String depositId) throws DepositNotFoundException {
+        var collections = collectionManager.getCollections();
+
+        for (var collection : collections) {
+            // TODO add more paths here (archived etc)
+            var searchPaths = List.of(
+                collection.getUploads().resolve(depositId),
+                collection.getDeposits().resolve(depositId)
+            );
+
+            for (var path : searchPaths) {
+                if (fileService.exists(path)) {
+                    var deposit = depositPropertiesManager.getProperties(path);
+                    deposit.setPath(path);
+                    deposit.setCollectionId(collection.getName());
+
+                    return deposit;
+                }
+            }
+        }
+
+        throw new DepositNotFoundException(String.format("Deposit with id %s could not be found", depositId));
+    }
+
+    void startFinalizingDeposit(Deposit deposit) throws CollectionNotFoundException {
         // if deposit is not in progress
         // set state to UPLOADED
         if (deposit.isInProgress()) {
@@ -127,94 +215,46 @@ public class DepositHandlerImpl implements DepositHandler {
             return;
         }
 
-        var id = deposit.getCanonicalId();
-        var collection = getCollection(deposit);
-        var path = getUploadPath(collection, id);
+        var collection = collectionManager.getCollectionByName(deposit.getCollectionId());
+        var path = getUploadPath(collection, deposit.getId());
 
-        var props = depositPropertiesManager.getProperties(path, deposit);
-        setDepositState(props, DepositState.UPLOADED, null);
-        depositPropertiesManager.saveProperties(path, deposit, props);
+        deposit.setState(DepositState.UPLOADED);
+        depositPropertiesManager.saveProperties(path, deposit);
 
-        try {
-            finalizeDeposit2(deposit);
-        }
-        catch (Exception | InvalidDepositException e) {
-            log.error("Error finalzing edpos", e);
-        }
+        executorService.execute(new DepositFinalizer(deposit.getId(), this));
+
     }
 
-    void finalizeDeposit2(Deposit deposit) throws Exception, InvalidDepositException {
-        var id = deposit.getCanonicalId();
-        var collection = getCollection(deposit);
-        var path = getUploadPath(collection, id);
+    @Override
+    public Deposit finalizeDeposit(String depositId) throws DepositNotFoundException, Exception, InvalidDepositException, InvalidPartialFileException, CollectionNotFoundException {
+        var deposit = getDeposit(depositId);
+        var path = deposit.getPath();
+        var depositor = userManager.getDepositorById(deposit.getDepositor());
 
-        log.info("Finalizing deposit with id {}", id);
-        var props = depositPropertiesManager.getProperties(path, deposit);
-        setDepositState(props, DepositState.FINALIZING, null);
-        depositPropertiesManager.saveProperties(path, deposit, props);
+        log.info("Finalizing deposit with id {}", depositId);
+        deposit.setState(DepositState.FINALIZING);
+        depositPropertiesManager.saveProperties(path, deposit);
 
-        var files = getDepositFiles(path).collect(Collectors.toList());
-
-        bagExtractor.extractBag(path, deposit.getMimeType(), false);
+        log.info("Extracting files for deposit {}", depositId);
+        bagExtractor.extractBag(path, deposit.getMimeType(), depositor.getFilepathMapping());
 
         var bagDir = getBagDir(path);
+        log.info("Bag dir found, it is named {}", bagDir);
 
-        setDepositState(props, DepositState.SUBMITTED, null);
-        props.setBagStoreBagName(bagDir.getFileName().toString());
-        depositPropertiesManager.saveProperties(path, deposit, props);
+        deposit.setState(DepositState.SUBMITTED);
+        deposit.setBagName(bagDir.getFileName().toString());
+        deposit.setMimeType(null);
+        depositPropertiesManager.saveProperties(path, deposit);
 
         // TODO get sword token
         // TODO get other stuff based on BagIt format
-
         removeZipFiles(path);
 
-        // ATTENTION: first remove content-type property and THEN move bag to ingest-flow-inbox!!
-        props.setContentType(null);
-        depositPropertiesManager.saveProperties(path, deposit, props);
-
-        var targetPath = getDepositPath(collection, id);
+        var collection = collectionManager.getCollectionByName(deposit.getCollectionId());
+        var targetPath = getDepositPath(collection, depositId);
         fileService.move(path, targetPath);
-        /*
-        val result = for {
-      props <- DepositProperties(id)
-      _ <- props.setState(State.FINALIZING, "Finalizing deposit")
-      _ <- props.save()
-      depositor <- props.getDepositorId
-      _ <- BagExtractor.extractBag(depositDir, mimetype, depositor)
-      bagDir <- getBagDir(depositDir)
-      _ <- checkFetchItemUrls(bagDir, settings.urlPattern)
-      _ <- checkBagVirtualValidity(bagDir)
-      props <- DepositProperties(id)
-      _ <- props.setState(SUBMITTED, "Deposit is valid and ready for post-submission processing")
-      _ <- props.setBagName(bagDir)
-      token <- getSwordToken(bagDir, id)
-      (otherId, otherIdVersion) <- getOtherIdentifierAndItsVersion(bagDir)
-      _ <- props.setSwordToken(token)
-      _ <- props.setOtherIdentifier(otherId, otherIdVersion)
-      _ <- props.save()
-      _ <- removeZipFiles(depositDir)
-      // ATTENTION: first remove content-type property and THEN move bag to ingest-flow-inbox!!
-      _ <- props.removeClientMessageContentType()
-      _ <- props.save()
-      _ <- moveBagToStorage(depositDir, storageDir)
-    } yield ()
 
-         */
-        // extract bag (including checking for disk size)
-        // set state to SUBMITTED
-        //        bagExtractor.extractBag(path, targetPath, false);
-        //        depositPropertiesManager.saveProperties(path, deposit, props);
-        //        setDepositState(props, DepositState.SUBMITTED, null);
-        //        depositPropertiesManager.saveProperties(targetPath, deposit, props);
-
-        // set bag name based on filename of content-disposition
-        // get sword token
-        // get otherId and otherVersion
-        // set these properties
-        // remove zip files
-        // delete content-type property
-        // move bag to storage (deposits folder)
-
+        return deposit;
     }
 
     private Stream<Path> getDepositFiles(Path path) throws IOException {
@@ -270,24 +310,6 @@ public class DepositHandlerImpl implements DepositHandler {
     private Path getUploadPath(CollectionConfig collectionConfig, String id) {
         return collectionConfig.getUploads()
             .resolve(id);
-    }
-
-    //    @Override
-    public void setDepositState(Path path, Deposit deposit, DepositState state) {
-        var properties = depositPropertiesManager.getProperties(path, deposit);
-        setDepositState(properties, state, null);
-        depositPropertiesManager.saveProperties(path, deposit, properties);
-    }
-
-    //    @Override
-    public DepositProperties getDepositProperties(Path path, Deposit deposit) {
-        return depositPropertiesManager.getProperties(path, deposit);
-    }
-
-    // TODO make this work
-    private CollectionConfig getCollection(Deposit deposit) {
-        return this.sword2Config.getCollections()
-            .get(0);
     }
 
     void setDepositState(DepositProperties properties, DepositState state, String message) {

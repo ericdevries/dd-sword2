@@ -15,6 +15,9 @@
  */
 package nl.knaw.dans.sword2;
 
+import java.nio.file.Path;
+import java.time.OffsetDateTime;
+
 public class Deposit {
     private String id;
     private String filename;
@@ -22,9 +25,81 @@ public class Deposit {
     private String slug = null;
     private String md5 = null;
     private String packaging;
+    private String depositor;
+    private String bagName;
+    private String swordToken;
+    private OffsetDateTime created;
+    private DepositState state;
+    private String stateDescription;
+    private Path path;
+    private String collectionId;
     private boolean inProgress = false;
     private boolean metadataRelevant = true;
     private long contentLength = -1L;
+
+    public String getCollectionId() {
+        return collectionId;
+    }
+
+    public void setCollectionId(String collectionId) {
+        this.collectionId = collectionId;
+    }
+
+    public Path getPath() {
+        return path;
+    }
+
+    public void setPath(Path path) {
+        this.path = path;
+    }
+
+    public String getStateDescription() {
+        return stateDescription;
+    }
+
+    public void setStateDescription(String stateDescription) {
+        this.stateDescription = stateDescription;
+    }
+
+    public String getSwordToken() {
+        return swordToken;
+    }
+
+    public void setSwordToken(String swordToken) {
+        this.swordToken = swordToken;
+    }
+
+    public String getBagName() {
+        return bagName;
+    }
+
+    public void setBagName(String bagName) {
+        this.bagName = bagName;
+    }
+
+    public DepositState getState() {
+        return state;
+    }
+
+    public void setState(DepositState state) {
+        this.state = state;
+    }
+
+    public OffsetDateTime getCreated() {
+        return created;
+    }
+
+    public void setCreated(OffsetDateTime created) {
+        this.created = created;
+    }
+
+    public String getDepositor() {
+        return depositor;
+    }
+
+    public void setDepositor(String depositor) {
+        this.depositor = depositor;
+    }
 
     public String getId() {
         return id;
@@ -108,8 +183,23 @@ public class Deposit {
 
     @Override
     public String toString() {
-        return "Deposit{" + "filename='" + filename + '\'' + ", mimeType='" + mimeType + '\'' + ", slug='" + slug + '\'' + ", md5='" + md5
-            + '\'' + ", packaging='" + packaging + '\'' + ", inProgress=" + inProgress + ", metadataRelevant=" + metadataRelevant
-            + ", contentLength=" + contentLength + '}';
+        return "Deposit{" +
+            "id='" + id + '\'' +
+            ", filename='" + filename + '\'' +
+            ", mimeType='" + mimeType + '\'' +
+            ", slug='" + slug + '\'' +
+            ", md5='" + md5 + '\'' +
+            ", packaging='" + packaging + '\'' +
+            ", depositor='" + depositor + '\'' +
+            ", bagName='" + bagName + '\'' +
+            ", swordToken='" + swordToken + '\'' +
+            ", created=" + created +
+            ", state=" + state +
+            ", stateDescription='" + stateDescription + '\'' +
+            ", path=" + path +
+            ", inProgress=" + inProgress +
+            ", metadataRelevant=" + metadataRelevant +
+            ", contentLength=" + contentLength +
+            '}';
     }
 }

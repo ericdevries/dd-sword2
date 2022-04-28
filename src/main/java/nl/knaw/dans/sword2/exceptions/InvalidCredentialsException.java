@@ -13,16 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.sword2.service;
+package nl.knaw.dans.sword2.exceptions;
 
-import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
-import nl.knaw.dans.sword2.exceptions.InvalidPartialFileException;
-
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.List;
-
-public interface BagExtractor {
-    void extractBag(Path path, String mimeType, boolean filePathMapping) throws Exception, InvalidDepositException, InvalidPartialFileException;
-
+public class InvalidCredentialsException extends Exception {
 }

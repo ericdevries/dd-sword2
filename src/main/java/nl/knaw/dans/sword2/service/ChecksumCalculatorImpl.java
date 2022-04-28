@@ -36,6 +36,17 @@ public class ChecksumCalculatorImpl implements
         return calculateChecksum(path, "SHA-1");
     }
 
+    @Override
+    public String calculateMD5Checksum(MessageDigest messageDigest) {
+        return DatatypeConverter.printHexBinary(messageDigest.digest())
+            .toLowerCase(Locale.ROOT);
+    }
+
+    @Override
+    public MessageDigest createMD5MessageDigest() throws NoSuchAlgorithmException {
+        return MessageDigest.getInstance("MD5");
+    }
+
     String calculateChecksum(Path path, String algorithm)
         throws NoSuchAlgorithmException, IOException {
         var md = MessageDigest.getInstance(algorithm);

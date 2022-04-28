@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Singleton;
+import javax.xml.bind.DatatypeConverter;
 import java.io.BufferedOutputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -27,7 +28,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -52,6 +57,24 @@ public class FileServiceImpl implements FileService {
         ensureDirectoriesExist(target.getParent());
         Files.copy(inputStream, target);
         return target;
+    }
+
+    @Override
+    public String copyFileWithMD5Hash(InputStream inputStream, Path target) throws IOException {
+        try {
+            var digest = MessageDigest.getInstance("MD5");
+            var stream = new DigestInputStream(inputStream, digest);
+
+            copyFile(stream, target);
+
+            return DatatypeConverter.printHexBinary(digest.digest())
+                .toLowerCase(Locale.ROOT);
+
+        } catch (NoSuchAlgorithmException e) {
+            // noop
+        }
+
+        throw new IOException(String.format("Unable to copy file to target %s", target));
     }
 
     @Override
@@ -100,6 +123,11 @@ public class FileServiceImpl implements FileService {
         }
 
         return target;
+    }
+
+    @Override
+    public boolean exists(Path path) {
+        return Files.exists(path);
     }
 
 }

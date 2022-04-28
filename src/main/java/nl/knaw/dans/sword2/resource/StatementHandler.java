@@ -13,16 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.sword2.service;
+package nl.knaw.dans.sword2.resource;
 
-import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
-import nl.knaw.dans.sword2.exceptions.InvalidPartialFileException;
+import io.dropwizard.auth.Auth;
+import nl.knaw.dans.sword2.auth.Depositor;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.List;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
-public interface BagExtractor {
-    void extractBag(Path path, String mimeType, boolean filePathMapping) throws Exception, InvalidDepositException, InvalidPartialFileException;
+@Path("/statement/{id}")
+public interface StatementHandler {
+    @GET
+    @Produces(MediaType.APPLICATION_XML)
+    Response getStatement(@PathParam("id") String depositId, @Context HttpHeaders headers, @Auth Depositor depositor);
+
 
 }

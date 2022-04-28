@@ -13,48 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.sword2.models.entry;
+package nl.knaw.dans.sword2.models.statement;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
-import java.net.URI;
+import javax.xml.bind.annotation.XmlValue;
 
-@XmlRootElement(name = "link")
+@XmlRootElement(name = "title")
 @XmlAccessorType(XmlAccessType.FIELD)
-public class Link {
-    @XmlAttribute
-    private URI href;
-    @XmlAttribute
-    private String rel;
+public class TextElement {
+    @XmlValue
+    private String text;
     @XmlAttribute
     private String type;
 
-    public Link() {
+    public TextElement() {
 
     }
-
-    public Link(URI href, String rel, String type) {
-        this.href = href;
-        this.rel = rel;
+    public TextElement(String text, String type) {
+        this.text = text;
         this.type = type;
     }
 
-    public URI getHref() {
-        return href;
+    public String getText() {
+        return text;
     }
 
-    public void setHref(URI href) {
-        this.href = href;
-    }
-
-    public String getRel() {
-        return rel;
-    }
-
-    public void setRel(String rel) {
-        this.rel = rel;
+    public void setText(String text) {
+        this.text = text;
     }
 
     public String getType() {
@@ -67,9 +55,8 @@ public class Link {
 
     @Override
     public String toString() {
-        return "Link{" +
-            "href=" + href +
-            ", rel='" + rel + '\'' +
+        return "TextElement{" +
+            "text='" + text + '\'' +
             ", type='" + type + '\'' +
             '}';
     }

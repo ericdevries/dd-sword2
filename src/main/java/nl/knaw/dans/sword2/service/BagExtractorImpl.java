@@ -16,12 +16,14 @@
 package nl.knaw.dans.sword2.service;
 
 import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
-import org.w3c.dom.stylesheets.LinkStyle;
+import nl.knaw.dans.sword2.exceptions.InvalidPartialFileException;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -42,7 +44,8 @@ public class BagExtractorImpl implements BagExtractor {
     }
 
     @Override
-    public void extractBag(Path path, String mimeType, boolean filePathMapping) throws Exception, InvalidDepositException {
+    public void extractBag(Path path, String mimeType, boolean filePathMapping) throws Exception, InvalidDepositException, InvalidPartialFileException {
+        System.out.println("STUFF: " + path + " -  " + mimeType);
         switch (mimeType) {
             case "application/zip":
                 extractZips(path, filePathMapping);
@@ -57,24 +60,15 @@ public class BagExtractorImpl implements BagExtractor {
         }
     }
 
-    void extractOctetStream(Path path, boolean filePathMapping) throws Exception {
+    void extractOctetStream(Path path, boolean filePathMapping) throws Exception, InvalidPartialFileException {
         var files = getDepositFiles(path);
+        var sorting = new HashMap<Path, Integer>();
 
-        // for validation
-        for (var file: files) {
-            getSequenceNumber(file);
+        for (var file : files) {
+            sorting.put(file, getSequenceNumber(file));
         }
 
-        files.sort((left, right) -> {
-            try {
-                return getSequenceNumber(left) - getSequenceNumber(right);
-            }
-            catch (Exception e) {
-                e.printStackTrace();
-            }
-
-            return 0;
-        });
+        files.sort(Comparator.comparing(sorting::get));
 
         var output = path.resolve("merged.zip");
         fileService.mergeFiles(files, output);
@@ -82,14 +76,25 @@ public class BagExtractorImpl implements BagExtractor {
         extractZips(path, filePathMapping);
     }
 
-    int getSequenceNumber(Path path) throws Exception {
+    int getSequenceNumber(Path path) throws Exception, InvalidPartialFileException {
         var parts = path.getFileName().toString().split("\\.");
 
         if (parts.length <= 1) {
-            throw new Exception(String.format("Invalid partial file name: %s", path));
+            throw new InvalidPartialFileException(String.format("Partial file %s has no extension. It should be a positive sequence number.", path));
         }
 
-        return Integer.parseInt(parts[parts.length - 1], 10);
+        try {
+            var value = Integer.parseInt(parts[parts.length - 1], 10);
+
+            if (value <= 0) {
+                throw new InvalidPartialFileException(String.format("Partial file %s has an incorrect extension. It should be a positive sequence number (> 0), but was: %s", path, value));
+            }
+
+            return value;
+        }
+        catch (NumberFormatException e) {
+            throw new InvalidPartialFileException(String.format("Partial file %s has an incorrect extension. Should be a positive sequence number.", path));
+        }
     }
 
     void extractZips(Path path, boolean filePathMapping) throws IOException {
@@ -101,8 +106,7 @@ public class BagExtractorImpl implements BagExtractor {
     }
 
     List<Path> getDepositFiles(Path path) throws IOException {
-        return fileService.listFiles(path).filter(f -> !f.getFileName().equals(Path.of("deposit.properties")))
-            .collect(Collectors.toList());
+        return fileService.listFiles(path).filter(f -> !f.getFileName().equals(Path.of("deposit.properties"))).collect(Collectors.toList());
     }
 
     void extract(Path zipFile, Path target, boolean filePathMapping) throws IOException {

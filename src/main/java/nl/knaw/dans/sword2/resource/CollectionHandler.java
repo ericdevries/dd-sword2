@@ -27,8 +27,12 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+
+import io.dropwizard.auth.Auth;
+import nl.knaw.dans.sword2.auth.Depositor;
 import nl.knaw.dans.sword2.models.entry.Entry;
-import org.glassfish.jersey.media.multipart.FormDataMultiPart;
+import org.glassfish.jersey.media.multipart.FormDataParam;
+import org.glassfish.jersey.media.multipart.MultiPart;
 
 @Path("/collection/{id}")
 public interface CollectionHandler {
@@ -39,24 +43,26 @@ public interface CollectionHandler {
 
 
     @POST
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Consumes("multipart/*")
     @Produces(MediaType.APPLICATION_ATOM_XML)
-    Response depositMultipart(FormDataMultiPart formDataMultiPart,
+    Response depositMultipart(MultiPart multiPart,
         @PathParam("id") String collectionId,
-        @Context HttpHeaders headers
+        @Context HttpHeaders headers,
+        @Auth Depositor depositor
     );
 
     @POST
     @Consumes(MediaType.APPLICATION_ATOM_XML)
     @Produces(MediaType.APPLICATION_ATOM_XML)
-    Response depositAtom(@PathParam("id") String collectionId, @Context HttpHeaders headers);
+    Response depositAtom(@PathParam("id") String collectionId, @Context HttpHeaders headers, @Auth Depositor depositor);
 
     @POST
     @Consumes()
     @Produces(MediaType.APPLICATION_ATOM_XML)
     Response depositAnything(InputStream inputStream,
         @PathParam("id") String collectionId,
-        @Context HttpHeaders headers
+        @Context HttpHeaders headers,
+        @Auth Depositor depositor
     );
 
 }

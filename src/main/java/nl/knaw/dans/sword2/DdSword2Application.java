@@ -17,18 +17,28 @@
 package nl.knaw.dans.sword2;
 
 import io.dropwizard.Application;
+import io.dropwizard.auth.AuthDynamicFeature;
+import io.dropwizard.auth.AuthValueFactoryProvider;
+import io.dropwizard.auth.basic.BasicCredentialAuthFilter;
 import io.dropwizard.forms.MultiPartBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import nl.knaw.dans.sword2.auth.Depositor;
+import nl.knaw.dans.sword2.auth.SwordAuthenticator;
 import nl.knaw.dans.sword2.resource.CollectionHandlerImpl;
+import nl.knaw.dans.sword2.resource.ContainerHandlerImpl;
 import nl.knaw.dans.sword2.resource.ServiceDocumentHandlerImpl;
+import nl.knaw.dans.sword2.resource.StatementHandlerImpl;
 import nl.knaw.dans.sword2.service.BagExtractorImpl;
 import nl.knaw.dans.sword2.service.ChecksumCalculatorImpl;
+import nl.knaw.dans.sword2.service.CollectionManagerImpl;
 import nl.knaw.dans.sword2.service.DepositHandlerImpl;
 import nl.knaw.dans.sword2.service.DepositPropertiesManagerImpl;
 import nl.knaw.dans.sword2.service.DepositReceiptFactoryImpl;
 import nl.knaw.dans.sword2.service.FileServiceImpl;
+import nl.knaw.dans.sword2.service.UserManagerImpl;
 import nl.knaw.dans.sword2.service.ZipServiceImpl;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
 
 public class DdSword2Application extends Application<DdSword2Configuration> {
 
@@ -45,6 +55,7 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
     public void initialize(final Bootstrap<DdSword2Configuration> bootstrap) {
         // TODO: application initialization
         bootstrap.addBundle(new MultiPartBundle());
+
     }
 
     @Override
@@ -54,20 +65,44 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
         var depositPropertiesManager = new DepositPropertiesManagerImpl(configuration.getSword2());
         var checksumCalculator = new ChecksumCalculatorImpl();
 
+        var userManager = new UserManagerImpl(configuration.getUsers());
+
+        var executorService = configuration.getSword2().getFinalizingQueue()
+            .build(environment);
+        var collectionManager = new CollectionManagerImpl(configuration.getSword2().getCollections());
+
         var zipService = new ZipServiceImpl(fileService);
 
         var bagExtractor = new BagExtractorImpl(zipService, fileService);
-        var depositManager = new DepositHandlerImpl(configuration.getSword2(),
+        var depositHandler = new DepositHandlerImpl(configuration.getSword2(),
             bagExtractor,
             fileService,
-            depositPropertiesManager, checksumCalculator);
+            depositPropertiesManager, collectionManager, executorService, userManager);
 
         var depositReceiptFactory = new DepositReceiptFactoryImpl(configuration.getSword2()
             .getBaseUrl());
 
+        environment.jersey().register(MultiPartFeature.class);
+        // Set up authentication
+        environment.jersey().register(new AuthDynamicFeature(
+            new BasicCredentialAuthFilter.Builder<Depositor>()
+                .setAuthenticator(new SwordAuthenticator(configuration.getUsers()))
+                .setRealm("SWORD2")
+                .buildAuthFilter()));
+
+        // For @Auth
+        environment.jersey().register(new AuthValueFactoryProvider.Binder<>(Depositor.class));
+
+        // Resources
         environment.jersey()
-            .register(new CollectionHandlerImpl(depositManager, depositReceiptFactory,
+            .register(new CollectionHandlerImpl(depositHandler, depositReceiptFactory,
                 checksumCalculator));
+
+        environment.jersey()
+            .register(new ContainerHandlerImpl(depositReceiptFactory, depositHandler));
+
+        environment.jersey()
+            .register(new StatementHandlerImpl(configuration.getSword2().getBaseUrl(), depositHandler));
 
         environment.jersey()
             .register(new ServiceDocumentHandlerImpl(configuration.getUsers(),

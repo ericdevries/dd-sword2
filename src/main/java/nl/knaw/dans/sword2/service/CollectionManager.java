@@ -15,14 +15,21 @@
  */
 package nl.knaw.dans.sword2.service;
 
-import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
-import nl.knaw.dans.sword2.exceptions.InvalidPartialFileException;
+import nl.knaw.dans.sword2.auth.Depositor;
+import nl.knaw.dans.sword2.config.CollectionConfig;
+import nl.knaw.dans.sword2.exceptions.CollectionNotFoundException;
 
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.List;
 
-public interface BagExtractor {
-    void extractBag(Path path, String mimeType, boolean filePathMapping) throws Exception, InvalidDepositException, InvalidPartialFileException;
+public interface CollectionManager {
 
+    CollectionConfig getCollectionByPath(String id, Depositor depositor) throws CollectionNotFoundException;
+
+    CollectionConfig getCollectionByPath(String id) throws CollectionNotFoundException;
+
+    CollectionConfig getCollectionByName(String id) throws CollectionNotFoundException;
+
+    List<CollectionConfig> getCollections(Depositor depositor);
+
+    List<CollectionConfig> getCollections();
 }

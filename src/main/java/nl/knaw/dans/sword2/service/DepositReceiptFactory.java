@@ -20,6 +20,6 @@ import nl.knaw.dans.sword2.models.entry.Entry;
 
 public interface DepositReceiptFactory {
 
-    Entry createDepositReceipt(Deposit deposit, DepositProperties depositProperties);
+    Entry createDepositReceipt(Deposit deposit);
 
 }

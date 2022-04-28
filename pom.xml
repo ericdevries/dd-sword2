@@ -52,6 +52,12 @@
             <version>${dropwizard.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>io.dropwizard</groupId>
+            <artifactId>dropwizard-auth</artifactId>
+            <version>${dropwizard.version}</version>
+        </dependency>
+
         <!-- Add project-specific dependencies here -->
         <dependency>
             <groupId>io.swagger</groupId>
@@ -107,6 +113,12 @@
             <groupId>nl.knaw.dans</groupId>
             <artifactId>dans-java-utils</artifactId>
             <version>0.0.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mindrot</groupId>
+            <artifactId>jbcrypt</artifactId>
+            <version>0.4</version>
         </dependency>
 
         <dependency>

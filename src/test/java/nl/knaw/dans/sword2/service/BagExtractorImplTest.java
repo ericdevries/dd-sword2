@@ -15,6 +15,7 @@
  */
 package nl.knaw.dans.sword2.service;
 
+import nl.knaw.dans.sword2.exceptions.InvalidPartialFileException;
 import org.apache.commons.io.FileUtils;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
@@ -166,7 +167,7 @@ class BagExtractorImplTest {
     }
 
     @Test
-    void testExtractOctetStream() throws Exception {
+    void testExtractOctetStream() throws Exception, InvalidPartialFileException {
         // copy a zip into 3 different files
         var zipFile = getZipFile("double-image.zip");
         System.out.println(Files.size(zipFile));

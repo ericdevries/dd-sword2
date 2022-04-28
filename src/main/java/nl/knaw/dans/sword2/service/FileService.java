@@ -15,7 +15,6 @@
  */
 package nl.knaw.dans.sword2.service;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -30,6 +29,8 @@ public interface FileService {
 
     Path copyFile(InputStream inputStream, Path target) throws IOException;
 
+    String copyFileWithMD5Hash(InputStream inputStream, Path target) throws IOException;
+
     Path copyFile(Path source, Path target) throws IOException;
 
     long getAvailableDiskSpace(Path path) throws IOException;
@@ -43,4 +44,7 @@ public interface FileService {
     void move(Path sourcePath, Path targetPath) throws IOException;
 
     Path mergeFiles(List<Path> files, Path target) throws IOException;
+
+    boolean exists(Path path);
+
 }
