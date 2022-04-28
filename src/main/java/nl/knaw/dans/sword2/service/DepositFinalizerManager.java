@@ -40,9 +40,11 @@ public class DepositFinalizerManager implements Runnable {
         // check all existing paths for anything in state FINALIZING, retry
 
         try {
+            System.out.println("WATCHING QUEUE: " + taskQueue);
             while (true) {
                 var depositTask = taskQueue.take();
 
+                System.out.println("GOT TASK: " + depositTask);
                 Runnable task;
 
                 if (depositTask.isRetry()) {

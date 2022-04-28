@@ -94,6 +94,8 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
 
         var depositFinalizerManager = new DepositFinalizerManager(executorService, depositHandler, queue);
 
+        new Thread(depositFinalizerManager).start();
+
         environment.jersey()
             .register(MultiPartFeature.class);
         // Set up authentication

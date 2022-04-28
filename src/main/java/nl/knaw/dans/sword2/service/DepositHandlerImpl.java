@@ -226,6 +226,7 @@ public class DepositHandlerImpl implements DepositHandler {
         depositPropertiesManager.saveProperties(path, deposit);
 
         try {
+            System.out.println("PUTTING IT IN THE QUEUE: " + depositFinalizerQueue);
             depositFinalizerQueue.put(new DepositFinalizerTask(deposit.getId(), false));
         } catch (InterruptedException e) {
             e.printStackTrace();
