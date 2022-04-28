@@ -20,19 +20,19 @@ import nl.knaw.dans.sword2.exceptions.CollectionNotFoundException;
 import nl.knaw.dans.sword2.exceptions.DepositNotFoundException;
 import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
 import nl.knaw.dans.sword2.exceptions.InvalidPartialFileException;
-import nl.knaw.dans.sword2.service.DepositFinalizerManager.DepositFinalizerTask;
+import nl.knaw.dans.sword2.service.finalizer.DepositFinalizerEvent;
+import nl.knaw.dans.sword2.service.finalizer.DepositFinalizerRetryEvent;
 
 public class DepositFinalizer implements Runnable {
 
     private final DepositHandler depositHandler;
     private final String depositId;
-    private final BlockingQueue<DepositFinalizerTask> taskQueue;
-
+    private final BlockingQueue<DepositFinalizerEvent> taskQueue;
 
 
     public DepositFinalizer(String depositId,
         DepositHandler depositHandler,
-        BlockingQueue<DepositFinalizerTask> taskQueue
+        BlockingQueue<DepositFinalizerEvent> taskQueue
     ) {
         this.depositId = depositId;
         this.depositHandler = depositHandler;
@@ -54,8 +54,7 @@ public class DepositFinalizer implements Runnable {
             e.printStackTrace();
         } catch (Exception e) {
             try {
-                System.out.println("RETRYING ");
-                taskQueue.put(new DepositFinalizerTask(this.depositId, true));
+                taskQueue.put(new DepositFinalizerRetryEvent(depositId));
             } catch (InterruptedException ex) {
                 ex.printStackTrace();
             }

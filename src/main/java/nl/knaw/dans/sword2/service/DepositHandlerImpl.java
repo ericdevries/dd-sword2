@@ -15,7 +15,16 @@
  */
 package nl.knaw.dans.sword2.service;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Path;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import javax.ws.rs.core.MediaType;
 import nl.knaw.dans.sword2.Deposit;
 import nl.knaw.dans.sword2.DepositState;
 import nl.knaw.dans.sword2.auth.Depositor;
@@ -28,19 +37,9 @@ import nl.knaw.dans.sword2.exceptions.HashMismatchException;
 import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
 import nl.knaw.dans.sword2.exceptions.InvalidPartialFileException;
 import nl.knaw.dans.sword2.exceptions.NotEnoughDiskSpaceException;
-import nl.knaw.dans.sword2.service.DepositFinalizerManager.DepositFinalizerTask;
+import nl.knaw.dans.sword2.service.finalizer.DepositFinalizerEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.ws.rs.core.MediaType;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Path;
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class DepositHandlerImpl implements DepositHandler {
 
@@ -52,7 +51,7 @@ public class DepositHandlerImpl implements DepositHandler {
     private final Sword2Config sword2Config;
     private final CollectionManager collectionManager;
     private final UserManager userManager;
-    private final BlockingQueue<DepositFinalizerTask> depositFinalizerQueue;
+    private final BlockingQueue<DepositFinalizerEvent> depositFinalizerQueue;
 
 
     public DepositHandlerImpl(Sword2Config sword2Config,
@@ -60,7 +59,7 @@ public class DepositHandlerImpl implements DepositHandler {
         FileService fileService,
         DepositPropertiesManager depositPropertiesManager,
         CollectionManager collectionManager, UserManager userManager,
-        BlockingQueue<DepositFinalizerTask> depositFinalizerQueue
+        BlockingQueue<DepositFinalizerEvent> depositFinalizerQueue
     ) {
         this.sword2Config = sword2Config;
         this.bagExtractor = bagExtractor;
@@ -72,11 +71,20 @@ public class DepositHandlerImpl implements DepositHandler {
     }
 
     @Override
-    public Deposit createDepositWithPayload(String collectionId, Depositor depositor, boolean inProgress, MediaType contentType, String hash, String packaging, String filename, long filesize,
-        InputStream inputStream)
+    public Deposit createDepositWithPayload(String collectionId,
+        Depositor depositor,
+        boolean inProgress,
+        MediaType contentType,
+        String hash,
+        String packaging,
+        String filename,
+        long filesize,
+        InputStream inputStream
+    )
         throws CollectionNotFoundException, IOException, NotEnoughDiskSpaceException, HashMismatchException {
 
-        var id = UUID.randomUUID().toString();
+        var id = UUID.randomUUID()
+            .toString();
         var collection = collectionManager.getCollectionByPath(collectionId, depositor);
 
         // make sure the upload directory exists
@@ -93,7 +101,9 @@ public class DepositHandlerImpl implements DepositHandler {
         var calculatedHash = fileService.copyFileWithMD5Hash(inputStream, path);
 
         if (hash == null || !hash.equals(calculatedHash)) {
-            throw new HashMismatchException(String.format("Hash %s does not match expected hash %s", calculatedHash, hash));
+            throw new HashMismatchException(String.format("Hash %s does not match expected hash %s",
+                calculatedHash,
+                hash));
         }
 
         var deposit = new Deposit();
@@ -120,23 +130,36 @@ public class DepositHandlerImpl implements DepositHandler {
     }
 
     @Override
-    public Deposit addPayloadToDeposit(String depositId, Depositor depositor, boolean inProgress, MediaType contentType, String hash, String packaging, String filename, long filesize,
-        InputStream inputStream) throws IOException, NotEnoughDiskSpaceException, HashMismatchException, DepositNotFoundException, DepositReadOnlyException, CollectionNotFoundException {
+    public Deposit addPayloadToDeposit(String depositId,
+        Depositor depositor,
+        boolean inProgress,
+        MediaType contentType,
+        String hash,
+        String packaging,
+        String filename,
+        long filesize,
+        InputStream inputStream
+    )
+        throws IOException, NotEnoughDiskSpaceException, HashMismatchException, DepositNotFoundException, DepositReadOnlyException, CollectionNotFoundException {
 
         var deposit = getDeposit(depositId, depositor);
-        var path = deposit.getPath().resolve(filename);
+        var path = deposit.getPath()
+            .resolve(filename);
 
         assertTempDirHasEnoughDiskspaceMarginForFile(path.getParent(), filesize);
 
         if (!DepositState.DRAFT.equals(deposit.getState())) {
-            throw new DepositReadOnlyException(String.format("Deposit with id %s is not writable", deposit.getId()));
+            throw new DepositReadOnlyException(String.format("Deposit with id %s is not writable",
+                deposit.getId()));
         }
 
         // check if the hash matches the one provided by the user
         var calculatedHash = fileService.copyFileWithMD5Hash(inputStream, path);
 
         if (hash == null || !hash.equals(calculatedHash)) {
-            throw new HashMismatchException(String.format("Hash %s does not match expected hash %s", calculatedHash, hash));
+            throw new HashMismatchException(String.format("Hash %s does not match expected hash %s",
+                calculatedHash,
+                hash));
         }
 
         deposit.setInProgress(inProgress);
@@ -177,14 +200,17 @@ public class DepositHandlerImpl implements DepositHandler {
     }
 
     @Override
-    public Deposit getDeposit(String depositId, Depositor depositor) throws DepositNotFoundException {
+    public Deposit getDeposit(String depositId, Depositor depositor)
+        throws DepositNotFoundException {
         var deposit = getDeposit(depositId);
 
-        if (depositor.getName().equals(deposit.getDepositor())) {
+        if (depositor.getName()
+            .equals(deposit.getDepositor())) {
             return deposit;
         }
 
-        throw new DepositNotFoundException(String.format("Deposit with id %s could not be found", depositId));
+        throw new DepositNotFoundException(String.format("Deposit with id %s could not be found",
+            depositId));
     }
 
     Deposit getDeposit(String depositId) throws DepositNotFoundException {
@@ -193,8 +219,10 @@ public class DepositHandlerImpl implements DepositHandler {
         for (var collection : collections) {
             // TODO add more paths here (archived etc)
             var searchPaths = List.of(
-                collection.getUploads().resolve(depositId),
-                collection.getDeposits().resolve(depositId)
+                collection.getUploads()
+                    .resolve(depositId),
+                collection.getDeposits()
+                    .resolve(depositId)
             );
 
             for (var path : searchPaths) {
@@ -208,7 +236,8 @@ public class DepositHandlerImpl implements DepositHandler {
             }
         }
 
-        throw new DepositNotFoundException(String.format("Deposit with id %s could not be found", depositId));
+        throw new DepositNotFoundException(String.format("Deposit with id %s could not be found",
+            depositId));
     }
 
     void startFinalizingDeposit(Deposit deposit) throws CollectionNotFoundException {
@@ -226,22 +255,19 @@ public class DepositHandlerImpl implements DepositHandler {
         depositPropertiesManager.saveProperties(path, deposit);
 
         try {
-            System.out.println("PUTTING IT IN THE QUEUE: " + depositFinalizerQueue);
-            depositFinalizerQueue.put(new DepositFinalizerTask(deposit.getId(), false));
+            depositFinalizerQueue.put(new DepositFinalizerEvent(deposit.getId()));
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
 
     @Override
-    public Deposit finalizeDeposit(String depositId) throws DepositNotFoundException, Exception, InvalidDepositException, InvalidPartialFileException, CollectionNotFoundException {
+    public Deposit finalizeDeposit(String depositId)
+        throws DepositNotFoundException, Exception, InvalidDepositException, InvalidPartialFileException, CollectionNotFoundException {
         var deposit = getDeposit(depositId);
         var path = deposit.getPath();
         var depositor = userManager.getDepositorById(deposit.getDepositor());
 
-        if (1 == 1) {
-            throw new Exception("OH MY");
-        }
         log.info("Finalizing deposit with id {}", depositId);
         deposit.setState(DepositState.FINALIZING);
         deposit.setStateDescription("Finalizing deposit");
@@ -255,7 +281,8 @@ public class DepositHandlerImpl implements DepositHandler {
 
         deposit.setState(DepositState.SUBMITTED);
         deposit.setStateDescription("Deposit is valid and ready for post-submission processing");
-        deposit.setBagName(bagDir.getFileName().toString());
+        deposit.setBagName(bagDir.getFileName()
+            .toString());
         deposit.setMimeType(null);
         depositPropertiesManager.saveProperties(path, deposit);
 
@@ -272,7 +299,8 @@ public class DepositHandlerImpl implements DepositHandler {
 
     private Stream<Path> getDepositFiles(Path path) throws IOException {
         return fileService.listFiles(path)
-            .filter(f -> !f.getFileName().equals(Path.of("deposit.properties")));
+            .filter(f -> !f.getFileName()
+                .equals(Path.of("deposit.properties")));
     }
 
     private void removeZipFiles(Path path) throws IOException {
@@ -281,8 +309,7 @@ public class DepositHandlerImpl implements DepositHandler {
         for (var file : files) {
             try {
                 fileService.deleteFile(file);
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 log.warn("Unable to remove file {}", file, e);
             }
         }
@@ -292,25 +319,28 @@ public class DepositHandlerImpl implements DepositHandler {
         var files = fileService.listDirectories(path);
 
         if (files.size() != 1) {
-            throw new InvalidDepositException(String.format("A deposit package must contain exactly one top-level directory, number found: %s", files.size()));
+            throw new InvalidDepositException(String.format(
+                "A deposit package must contain exactly one top-level directory, number found: %s",
+                files.size()));
         }
 
         return files.get(0);
     }
 
-    void assertTempDirHasEnoughDiskspaceMarginForFile(Path destination, long contentLength) throws IOException, NotEnoughDiskSpaceException {
+    void assertTempDirHasEnoughDiskspaceMarginForFile(Path destination, long contentLength)
+        throws IOException, NotEnoughDiskSpaceException {
         if (contentLength > -1) {
             var availableSpace = fileService.getAvailableDiskSpace(destination);
             log.debug("Free space  = {}", availableSpace);
             log.debug("File length = {}", contentLength);
             log.debug("Margin      = {}", sword2Config.getDiskSpaceMargin());
-            log.debug("Extra space = {}", availableSpace - contentLength - sword2Config.getDiskSpaceMargin());
+            log.debug("Extra space = {}",
+                availableSpace - contentLength - sword2Config.getDiskSpaceMargin());
 
             if (availableSpace - contentLength < sword2Config.getDiskSpaceMargin()) {
                 throw new NotEnoughDiskSpaceException("Not enough space available");
             }
-        }
-        else {
+        } else {
             log.debug("Content-length is -1, not checking for disk space margin");
         }
     }
@@ -333,7 +363,8 @@ public class DepositHandlerImpl implements DepositHandler {
                 properties.setStateDescription("Deposit is open for additional data");
                 break;
             case SUBMITTED:
-                properties.setStateDescription("Deposit is valid and ready for post-submission processing");
+                properties.setStateDescription(
+                    "Deposit is valid and ready for post-submission processing");
                 break;
             case FAILED:
                 // TODO generic error message

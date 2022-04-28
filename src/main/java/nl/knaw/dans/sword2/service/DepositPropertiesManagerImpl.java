@@ -92,7 +92,6 @@ public class DepositPropertiesManagerImpl implements DepositPropertiesManager {
     public Deposit getProperties(Path path) {
 
         var propertiesFile = getDepositPath(path);
-        System.out.println("PATH: " + path + " - " + propertiesFile);
         var params = new Parameters();
         var paramConfig = params.properties()
             .setFileName(propertiesFile.toString());
@@ -102,7 +101,6 @@ public class DepositPropertiesManagerImpl implements DepositPropertiesManager {
 
         try {
             var config = builder.getConfiguration();
-            System.out.println("MAPPING TO DEPOSIT");
             return mapToDeposit(config);
         }
         catch (ConfigurationException cex) {
@@ -168,7 +166,6 @@ public class DepositPropertiesManagerImpl implements DepositPropertiesManager {
         deposit.setSwordToken(config.getString("dataverse.sword-token"));
         deposit.setMimeType(config.getString("easy-sword2.client-message.content-type"));
 
-        System.out.println("CONFIG! " + deposit);
         return deposit;
     }
 

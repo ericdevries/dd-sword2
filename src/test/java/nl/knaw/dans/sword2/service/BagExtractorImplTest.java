@@ -170,7 +170,6 @@ class BagExtractorImplTest {
     void testExtractOctetStream() throws Exception, InvalidPartialFileException {
         // copy a zip into 3 different files
         var zipFile = getZipFile("double-image.zip");
-        System.out.println(Files.size(zipFile));
 
         var part1 = copyPartOfFile(zipFile, testPath.resolve("part.1"), 0, 1000000);
         var part2 = copyPartOfFile(zipFile, testPath.resolve("part.2"), 1000000, 2000000);

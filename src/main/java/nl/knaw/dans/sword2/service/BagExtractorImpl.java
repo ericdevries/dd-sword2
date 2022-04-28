@@ -15,11 +15,6 @@
  */
 package nl.knaw.dans.sword2.service;
 
-import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
-import nl.knaw.dans.sword2.exceptions.InvalidPartialFileException;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Comparator;
@@ -30,9 +25,17 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
+import nl.knaw.dans.sword2.exceptions.InvalidPartialFileException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 public class BagExtractorImpl implements BagExtractor {
+
+    private static final Logger log = LoggerFactory.getLogger(BagExtractorImpl.class);
     private final Pattern defaultPrefixPattern = Pattern.compile("^[^/]+/data/");
     private final ZipService zipService;
     private final FileService fileService;
@@ -44,8 +47,13 @@ public class BagExtractorImpl implements BagExtractor {
     }
 
     @Override
-    public void extractBag(Path path, String mimeType, boolean filePathMapping) throws Exception, InvalidDepositException, InvalidPartialFileException {
-        System.out.println("STUFF: " + path + " -  " + mimeType);
+    public void extractBag(Path path, String mimeType, boolean filePathMapping)
+        throws Exception, InvalidDepositException, InvalidPartialFileException {
+        log.debug("Extracting bag {} with mimeType {} and file path mapping set to {}",
+            path,
+            mimeType,
+            filePathMapping);
+
         switch (mimeType) {
             case "application/zip":
                 extractZips(path, filePathMapping);
@@ -60,12 +68,15 @@ public class BagExtractorImpl implements BagExtractor {
         }
     }
 
-    void extractOctetStream(Path path, boolean filePathMapping) throws Exception, InvalidPartialFileException {
+    void extractOctetStream(Path path, boolean filePathMapping)
+        throws Exception, InvalidPartialFileException {
         var files = getDepositFiles(path);
         var sorting = new HashMap<Path, Integer>();
 
         for (var file : files) {
-            sorting.put(file, getSequenceNumber(file));
+            var sequenceNumber = getSequenceNumber(file);
+            log.trace("Sequence number for file {}: {}", file, sequenceNumber);
+            sorting.put(file, sequenceNumber);
         }
 
         files.sort(Comparator.comparing(sorting::get));
@@ -73,27 +84,36 @@ public class BagExtractorImpl implements BagExtractor {
         var output = path.resolve("merged.zip");
         fileService.mergeFiles(files, output);
 
+        log.debug("Extracting merged zip in path {}", path);
         extractZips(path, filePathMapping);
     }
 
     int getSequenceNumber(Path path) throws Exception, InvalidPartialFileException {
-        var parts = path.getFileName().toString().split("\\.");
+        var parts = path.getFileName()
+            .toString()
+            .split("\\.");
 
         if (parts.length <= 1) {
-            throw new InvalidPartialFileException(String.format("Partial file %s has no extension. It should be a positive sequence number.", path));
+            throw new InvalidPartialFileException(String.format(
+                "Partial file %s has no extension. It should be a positive sequence number.",
+                path));
         }
 
         try {
             var value = Integer.parseInt(parts[parts.length - 1], 10);
 
             if (value <= 0) {
-                throw new InvalidPartialFileException(String.format("Partial file %s has an incorrect extension. It should be a positive sequence number (> 0), but was: %s", path, value));
+                throw new InvalidPartialFileException(String.format(
+                    "Partial file %s has an incorrect extension. It should be a positive sequence number (> 0), but was: %s",
+                    path,
+                    value));
             }
 
             return value;
-        }
-        catch (NumberFormatException e) {
-            throw new InvalidPartialFileException(String.format("Partial file %s has an incorrect extension. Should be a positive sequence number.", path));
+        } catch (NumberFormatException e) {
+            throw new InvalidPartialFileException(String.format(
+                "Partial file %s has an incorrect extension. Should be a positive sequence number.",
+                path));
         }
     }
 
@@ -106,20 +126,25 @@ public class BagExtractorImpl implements BagExtractor {
     }
 
     List<Path> getDepositFiles(Path path) throws IOException {
-        return fileService.listFiles(path).filter(f -> !f.getFileName().equals(Path.of("deposit.properties"))).collect(Collectors.toList());
+        return fileService.listFiles(path)
+            .filter(f -> !f.getFileName()
+                .equals(Path.of("deposit.properties")))
+            .collect(Collectors.toList());
     }
 
     void extract(Path zipFile, Path target, boolean filePathMapping) throws IOException {
         if (filePathMapping) {
             extractWithFilePathMapping(zipFile, target, generateFilePathMapping(zipFile));
-        }
-        else {
+        } else {
             extractWithFilePathMapping(zipFile, target, Map.of());
         }
     }
 
-    void extractWithFilePathMapping(Path zipFile, Path target, Map<String, String> filePathMapping) throws IOException {
+    void extractWithFilePathMapping(Path zipFile, Path target, Map<String, String> filePathMapping)
+        throws IOException {
         fileService.ensureDirectoriesExist(target);
+
+        log.debug("Extracting file {} to target {} with file path mapping set to {}", zipFile, target, filePathMapping);
         zipService.extractZipFileWithFileMapping(zipFile, target, filePathMapping);
     }
 
@@ -127,21 +152,28 @@ public class BagExtractorImpl implements BagExtractor {
         return generateFilePathMapping(zipFile, defaultPrefixPattern);
     }
 
-    Map<String, String> generateFilePathMapping(Path zipFile, Pattern prefixPattern) throws IOException {
+    Map<String, String> generateFilePathMapping(Path zipFile, Pattern prefixPattern)
+        throws IOException {
         var fileNames = zipService.getFilesInZip(zipFile);
 
-        return fileNames.stream().map(fileName -> {
-            var matcher = prefixPattern.matcher(fileName);
+        return fileNames.stream()
+            .map(fileName -> {
+                var matcher = prefixPattern.matcher(fileName);
 
-            if (matcher.find()) {
-                var prefix = matcher.group();
-                var newPath = Path.of(prefix, UUID.randomUUID().toString()).toString();
+                if (matcher.find()) {
+                    var prefix = matcher.group();
+                    var newPath = Path.of(prefix,
+                            UUID.randomUUID()
+                                .toString())
+                        .toString();
 
-                return Map.entry(fileName, newPath);
-            }
+                    return Map.entry(fileName, newPath);
+                }
 
-            return null;
-        }).filter(Objects::nonNull).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                return null;
+            })
+            .filter(Objects::nonNull)
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
 }

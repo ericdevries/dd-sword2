@@ -15,6 +15,15 @@
  */
 package nl.knaw.dans.sword2.resource;
 
+import java.io.IOException;
+import java.io.InputStream;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
 import nl.knaw.dans.sword2.UriRegistry;
 import nl.knaw.dans.sword2.auth.Depositor;
 import nl.knaw.dans.sword2.exceptions.CollectionNotFoundException;
@@ -25,18 +34,7 @@ import nl.knaw.dans.sword2.service.ChecksumCalculator;
 import nl.knaw.dans.sword2.service.DepositHandler;
 import nl.knaw.dans.sword2.service.DepositReceiptFactory;
 import org.apache.commons.fileupload.ParameterParser;
-import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.glassfish.jersey.media.multipart.MultiPart;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-import java.io.IOException;
-import java.io.InputStream;
 
 @Singleton
 public class CollectionHandlerImpl implements CollectionHandler {
@@ -81,9 +79,9 @@ public class CollectionHandlerImpl implements CollectionHandler {
         var inProgress = getInProgress(headers.getHeaderString("in-progress"));
 
         for (var part : multiPart.getBodyParts()) {
-            System.out.println("PART :" + part);
-            var name = part.getContentDisposition().getParameters().get("name");
-
+            var name = part.getContentDisposition()
+                .getParameters()
+                .get("name");
 
             if ("atom".equals(name)) {
                 // TODO get atom part
@@ -93,24 +91,37 @@ public class CollectionHandlerImpl implements CollectionHandler {
 //                Document<Entry> entryDoc = parser.parse(entryPart);
 //                Entry entry = entryDoc.getRoot();
 //                deposit.setEntry(entry);
-            }
-            else if ("payload".equals(name)) {
-                filename = part.getContentDisposition().getFileName();
-                hash = part.getHeaders().getFirst("content-md5");
-                packaging = part.getHeaders().getFirst("packaging");
-                contentLength = part.getContentDisposition().getSize();
+            } else if ("payload".equals(name)) {
+                filename = part.getContentDisposition()
+                    .getFileName();
+                hash = part.getHeaders()
+                    .getFirst("content-md5");
+                packaging = part.getHeaders()
+                    .getFirst("packaging");
+                contentLength = part.getContentDisposition()
+                    .getSize();
                 mimeType = "application/octet-stream";
                 inputStream = part.getEntityAs(InputStream.class);
 
                 if (part.getMediaType() != null) {
-                    mimeType = part.getMediaType().toString().split(";")[0];
+                    mimeType = part.getMediaType()
+                        .toString()
+                        .split(";")[0];
                 }
             }
         }
 
         try {
             var deposit = depositHandler.createDepositWithPayload(
-                collectionId, depositor, inProgress, MediaType.valueOf(mimeType), hash, packaging, filename, contentLength, inputStream);
+                collectionId,
+                depositor,
+                inProgress,
+                MediaType.valueOf(mimeType),
+                hash,
+                packaging,
+                filename,
+                contentLength,
+                inputStream);
 
             var entry = depositReceiptFactory.createDepositReceipt(deposit);
 
@@ -118,22 +129,16 @@ public class CollectionHandlerImpl implements CollectionHandler {
                 .entity(entry)
                 .build();
 
-        }
-        catch (CollectionNotFoundException e) {
+        } catch (CollectionNotFoundException e) {
             e.printStackTrace();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
-        }
-        catch (NotEnoughDiskSpaceException e) {
+        } catch (NotEnoughDiskSpaceException e) {
             e.printStackTrace();
-        }
-        catch (HashMismatchException e) {
+        } catch (HashMismatchException e) {
             e.printStackTrace();
         }
 
-
-        System.out.println("MULTIPART: " + multiPart);
         return null;
     }
 
@@ -161,24 +166,28 @@ public class CollectionHandlerImpl implements CollectionHandler {
 
         try {
             var deposit = depositHandler.createDepositWithPayload(
-                collectionId, depositor, inProgress, contentType, md5, packaging, filename, filesize, inputStream);
+                collectionId,
+                depositor,
+                inProgress,
+                contentType,
+                md5,
+                packaging,
+                filename,
+                filesize,
+                inputStream);
 
             var entry = depositReceiptFactory.createDepositReceipt(deposit);
 
             return Response.status(Response.Status.CREATED)
                 .entity(entry)
                 .build();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
-        }
-        catch (NotEnoughDiskSpaceException e) {
+        } catch (NotEnoughDiskSpaceException e) {
             throw new WebApplicationException(503);
-        }
-        catch (CollectionNotFoundException e) {
+        } catch (CollectionNotFoundException e) {
             e.printStackTrace();
-        }
-        catch (HashMismatchException e) {
+        } catch (HashMismatchException e) {
             e.printStackTrace();
         }
         return Response.status(Status.INTERNAL_SERVER_ERROR)
@@ -210,8 +219,7 @@ public class CollectionHandlerImpl implements CollectionHandler {
             if (header != null) {
                 return Long.parseLong(header);
             }
-        }
-        catch (NumberFormatException ignored) {
+        } catch (NumberFormatException ignored) {
 
         }
 
@@ -225,11 +233,9 @@ public class CollectionHandlerImpl implements CollectionHandler {
 
         if ("true".equals(header)) {
             return true;
-        }
-        else if ("false".equals(header)) {
+        } else if ("false".equals(header)) {
             return false;
-        }
-        else {
+        } else {
             // TODO throw some exception
             return false;
         }

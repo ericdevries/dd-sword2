@@ -44,7 +44,6 @@ class StatementHandlerImplTest {
     void testStatement() throws JAXBException {
         var response = EXT.client().target("/statement/a03ca6f1-608b-4247-8c22-99681b8494a0")
             .request().get();
-        System.out.println("RESPONSE: " + response);
         assertEquals(200, response.getStatus());
 
         var feed = response.readEntity(Feed.class);

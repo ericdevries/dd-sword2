@@ -24,7 +24,6 @@ import io.dropwizard.forms.MultiPartBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import nl.knaw.dans.sword2.auth.Depositor;
 import nl.knaw.dans.sword2.auth.SwordAuthenticator;
 import nl.knaw.dans.sword2.resource.CollectionHandlerImpl;
@@ -34,15 +33,14 @@ import nl.knaw.dans.sword2.resource.StatementHandlerImpl;
 import nl.knaw.dans.sword2.service.BagExtractorImpl;
 import nl.knaw.dans.sword2.service.ChecksumCalculatorImpl;
 import nl.knaw.dans.sword2.service.CollectionManagerImpl;
-import nl.knaw.dans.sword2.service.DepositFinalizer;
-import nl.knaw.dans.sword2.service.DepositFinalizerManager;
-import nl.knaw.dans.sword2.service.DepositFinalizerManager.DepositFinalizerTask;
 import nl.knaw.dans.sword2.service.DepositHandlerImpl;
 import nl.knaw.dans.sword2.service.DepositPropertiesManagerImpl;
 import nl.knaw.dans.sword2.service.DepositReceiptFactoryImpl;
 import nl.knaw.dans.sword2.service.FileServiceImpl;
 import nl.knaw.dans.sword2.service.UserManagerImpl;
 import nl.knaw.dans.sword2.service.ZipServiceImpl;
+import nl.knaw.dans.sword2.service.finalizer.DepositFinalizerEvent;
+import nl.knaw.dans.sword2.service.finalizer.DepositFinalizerManager;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 
 public class DdSword2Application extends Application<DdSword2Configuration> {
@@ -76,7 +74,9 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
             .getFinalizingQueue()
             .build(environment);
 
-        var queue = new ArrayBlockingQueue<DepositFinalizerTask>(configuration.getSword2().getFinalizingQueue().getMaxQueueSize());
+        var queue = new ArrayBlockingQueue<DepositFinalizerEvent>(configuration.getSword2()
+            .getFinalizingQueue()
+            .getMaxQueueSize());
 
         var collectionManager = new CollectionManagerImpl(configuration.getSword2()
             .getCollections());
@@ -92,9 +92,9 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
         var depositReceiptFactory = new DepositReceiptFactoryImpl(configuration.getSword2()
             .getBaseUrl());
 
-        var depositFinalizerManager = new DepositFinalizerManager(executorService, depositHandler, queue);
-
-        new Thread(depositFinalizerManager).start();
+        var depositFinalizerManager = new DepositFinalizerManager(executorService,
+            depositHandler,
+            queue);
 
         environment.jersey()
             .register(MultiPartFeature.class);
@@ -109,6 +109,10 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
         // For @Auth
         environment.jersey()
             .register(new AuthValueFactoryProvider.Binder<>(Depositor.class));
+
+        // Managed classes
+        environment.lifecycle()
+            .manage(depositFinalizerManager);
 
         // Resources
         environment.jersey()

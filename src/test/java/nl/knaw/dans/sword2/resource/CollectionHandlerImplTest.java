@@ -164,8 +164,6 @@ class CollectionHandlerImplTest {
 
         var feed = statusResult.readEntity(Feed.class);
 
-        System.out.println("STATUS: " + feed);
-
     }
 
     @Test
