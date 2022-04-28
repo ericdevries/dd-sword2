@@ -15,9 +15,20 @@
  */
 package nl.knaw.dans.sword2.resource;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.dropwizard.testing.ResourceHelpers;
 import io.dropwizard.testing.junit5.DropwizardAppExtension;
 import io.dropwizard.testing.junit5.DropwizardExtensionsSupport;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.Invocation.Builder;
+import javax.ws.rs.core.MediaType;
+import javax.xml.bind.JAXBException;
 import nl.knaw.dans.sword2.DdSword2Application;
 import nl.knaw.dans.sword2.DdSword2Configuration;
 import nl.knaw.dans.sword2.models.entry.Entry;
@@ -28,6 +39,7 @@ import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.io.FileUtils;
 import org.glassfish.jersey.media.multipart.BodyPart;
 import org.glassfish.jersey.media.multipart.MultiPart;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
@@ -36,33 +48,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.MediaType;
-import javax.xml.bind.JAXBException;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.stream.Collectors;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 @ExtendWith(DropwizardExtensionsSupport.class)
 class CollectionHandlerImplTest {
 
-    //
-    //    private static final FileService fileService = new FileServiceImpl();
-    //    private static final ZipService zipService = new ZipServiceImpl(fileService);
-    //    private static final BagExtractor bagExtractor = new BagExtractorImpl(zipService);
-    //    private static final DepositPropertiesManager depositPropertiesManager = new DepositPropertiesManagerImpl();
     private static DropwizardAppExtension<DdSword2Configuration> EXT = new DropwizardAppExtension<>(
         DdSword2Application.class,
         ResourceHelpers.resourceFilePath("debug-etc/config.yml")
     );
-    //    private static final DepositManager depositManager = new DepositManagerImpl(EXT.getConfiguration().getSword2(), bagExtractor, fileService, depositPropertiesManager);
-
-    //    private static final ResourceExtension EXT = ResourceExtension.builder().addResource(new CollectionHandlerImpl(depositManager)).build();
 
     @BeforeEach
     void startUp() throws IOException {
@@ -71,73 +63,60 @@ class CollectionHandlerImplTest {
 
     @AfterEach
     void tearDown() throws IOException {
-        //        FileUtils.deleteDirectory(Path.of("data/tmp")
-        //            .toFile());
+        FileUtils.deleteDirectory(Path.of("data/tmp")
+            .toFile());
+    }
+
+    Builder buildRequest(String path) {
+        var url = String.format("http://localhost:%s%s", EXT.getLocalPort(), path);
+
+        return EXT.client()
+            .target(url)
+            .register(MultiPartFeature.class)
+            .request()
+            .header("authorization", "Basic dXNlcjAwMTp1c2VyMDAx");
     }
 
     @Test
     void testZipDepositDraftState() throws IOException, JAXBException, ConfigurationException {
         var path = getClass().getResource("/zips/audiences.zip");
-        var url = String.format("http://localhost:%s/collection/1", EXT.getLocalPort());
 
         assert path != null;
 
-        var result = EXT.client()
-            .target(url)
-            .request()
+        var result = buildRequest("/collection/1")
             .header("content-type", "application/zip")
             .header("content-md5", "bc27e20467a773501a4ae37fb85a9c3f")
             .header("content-disposition", "attachment; filename=bag.zip")
             .header("in-progress", "true")
-            .header("authorization", "Basic dXNlcjAwMTp1c2VyMDAx")
             .post(Entity.entity(path.openStream(), MediaType.valueOf("application/zip")));
 
         assertEquals(201, result.getStatus());
 
-        var paths = Files.walk(Path.of("data/tmp/1/uploads/"))
-            .collect(Collectors.toList());
-        var firstPath = paths.get(1); // the path at 0 is the directory itself, we need the first child
+        var receipt = result.readEntity(Entry.class);
+        var parts = receipt.getId()
+            .split("/");
+        var id = parts[parts.length - 1];
+
+        var firstPath = Path.of("data/tmp/1/uploads/", id);
 
         assertTrue(Files.exists(firstPath.resolve("deposit.properties")));
         assertTrue(Files.exists(firstPath.resolve("bag.zip")));
 
-        var params = new Parameters();
-        var paramConfig = params.properties()
-            .setFileName(firstPath.resolve("deposit.properties").toString());
+        var config = getProperties(firstPath);
 
-        var builder = new FileBasedConfigurationBuilder<FileBasedConfiguration>(
-            PropertiesConfiguration.class, null, true).configure(
-            paramConfig);
-
-        var config = builder.getConfiguration();
-
-        System.out.println("CONFIG: " + config);
         assertNotNull(config.getString("bag-store.bag-id"));
         assertNotNull(config.getString("dataverse.bag-id"));
         assertNotNull(config.getString("creation.timestamp"));
         assertEquals("SWORD2", config.getString("deposit.origin"));
         assertEquals("DRAFT", config.getString("state.label"));
-        //        assertNotNull(config.getString("deposit.userId"));
+        assertEquals("user001", config.getString("depositor.userId"));
         assertEquals("Deposit is open for additional data", config.getString("state.description"));
-        //        assertEquals("AUDIENCE", config.getString("bag-store.bag-name"));
+        //assertEquals("AUDIENCE", config.getString("bag-store.bag-name"));
 
-        var receipt = result.readEntity(Entry.class);
-        System.out.println("RECEIPT " + receipt);
-
-        var parts = receipt.getId().split("/");
-
-        var statementUrl =  String.format("http://localhost:%s/statement/%s", EXT.getLocalPort(),
-            parts[parts.length - 1]);
-
-        var statusResult = EXT.client()
-            .target(statementUrl)
-            .request()
-            .header("authorization", "Basic dXNlcjAwMTp1c2VyMDAx")
+        var statusResult = buildRequest("/statement/" + id)
             .get();
 
         var feed = statusResult.readEntity(Feed.class);
-
-        System.out.println("STATUS: " + feed);
 
     }
 
@@ -148,36 +127,26 @@ class CollectionHandlerImplTest {
 
         assert path != null;
 
-        var result = EXT.client()
-            .target(url)
-            .request()
+        var result = buildRequest("/collection/1")
             .header("content-type", "application/zip")
             .header("content-md5", "bc27e20467a773501a4ae37fb85a9c3f")
             .header("content-disposition", "attachment; filename=bag.zip")
             .header("in-progress", "true")
-            .header("authorization", "Basic dXNlcjAwMTp1c2VyMDAx")
             .post(Entity.entity(path.openStream(), MediaType.valueOf("application/zip")));
 
         assertEquals(201, result.getStatus());
 
-        var paths = Files.walk(Path.of("data/tmp/1/uploads/"))
-            .collect(Collectors.toList());
-        var firstPath = paths.get(1); // the path at 0 is the directory itself, we need the first child
+        var receipt = result.readEntity(Entry.class);
+        var parts = receipt.getId()
+            .split("/");
+        var id = parts[parts.length - 1];
+        var firstPath = Path.of("data/tmp/1/uploads/", id);
 
         assertTrue(Files.exists(firstPath.resolve("deposit.properties")));
         assertTrue(Files.exists(firstPath.resolve("bag.zip")));
 
-        var params = new Parameters();
-        var paramConfig = params.properties()
-            .setFileName(firstPath.resolve("deposit.properties").toString());
+        var config = getProperties(firstPath);
 
-        var builder = new FileBasedConfigurationBuilder<FileBasedConfiguration>(
-            PropertiesConfiguration.class, null, true).configure(
-            paramConfig);
-
-        var config = builder.getConfiguration();
-
-        System.out.println("CONFIG: " + config);
         assertNotNull(config.getString("bag-store.bag-id"));
         assertNotNull(config.getString("dataverse.bag-id"));
         assertNotNull(config.getString("creation.timestamp"));
@@ -187,18 +156,10 @@ class CollectionHandlerImplTest {
         assertEquals("Deposit is open for additional data", config.getString("state.description"));
         //        assertEquals("AUDIENCE", config.getString("bag-store.bag-name"));
 
-        var receipt = result.readEntity(Entry.class);
-        System.out.println("RECEIPT " + receipt);
-
-        var parts = receipt.getId().split("/");
-
-        var statementUrl =  String.format("http://localhost:%s/statement/%s", EXT.getLocalPort(),
+        var statementUrl = String.format("http://localhost:%s/statement/%s", EXT.getLocalPort(),
             parts[parts.length - 1]);
 
-        var statusResult = EXT.client()
-            .target(statementUrl)
-            .request()
-            .header("authorization", "Basic dXNlcjAwMTp1c2VyMDAx")
+        var statusResult = buildRequest("/statement/" + parts[parts.length - 1])
             .get();
 
         var feed = statusResult.readEntity(Feed.class);
@@ -208,15 +169,13 @@ class CollectionHandlerImplTest {
     }
 
     @Test
-    void testZipDepositUploaded() throws IOException, JAXBException, ConfigurationException {
+    void testZipDepositUploaded()
+        throws IOException, JAXBException, ConfigurationException, InterruptedException {
         var path = getClass().getResource("/zips/audiences.zip");
-        var url = String.format("http://localhost:%s/collection/1", EXT.getLocalPort());
 
         assert path != null;
 
-        var result = EXT.client()
-            .target(url)
-            .request()
+        var result = buildRequest("/collection/1")
             .header("content-type", "application/zip")
             .header("content-md5", "bc27e20467a773501a4ae37fb85a9c3f")
             .header("in-progress", "false")
@@ -225,30 +184,43 @@ class CollectionHandlerImplTest {
 
         assertEquals(201, result.getStatus());
 
-        var paths = Files.walk(Path.of("data/tmp/1/uploads/"))
-            .collect(Collectors.toList());
-        var firstPath = paths.get(1); // the path at 0 is the directory itself, we need the first child
+        var receipt = result.readEntity(Entry.class);
+        var parts = receipt.getId()
+            .split("/");
+        var id = parts[parts.length - 1];
 
-        assertTrue(Files.exists(firstPath.resolve("deposit.properties")));
+        var count = 0;
+        var state = "";
 
-        var params = new Parameters();
-        var paramConfig = params.properties()
-            .setFileName(firstPath.resolve("deposit.properties").toString());
+        // waiting at most 5 seconds for the background thread to handle this
+        while (count < 5) {
 
-        var builder = new FileBasedConfigurationBuilder<FileBasedConfiguration>(
-            PropertiesConfiguration.class, null, true).configure(
-            paramConfig);
+            var statement = buildRequest("/statement/" + id)
+                .get(Feed.class);
 
-        var config = builder.getConfiguration();
+            state = statement.getCategory()
+                .getTerm();
+
+            if (state.equals("SUBMITTED")) {
+                break;
+            }
+            Thread.sleep(1000);
+            count += 1;
+        }
+
+        assertEquals("SUBMITTED", state);
+
+        var firstPath = Path.of("data/tmp/1/deposits/" + id);
+        var config = getProperties(firstPath);
 
         assertNotNull(config.getString("bag-store.bag-id"));
         assertNotNull(config.getString("dataverse.bag-id"));
         assertNotNull(config.getString("creation.timestamp"));
         assertEquals("SWORD2", config.getString("deposit.origin"));
-        assertEquals("UPLOADED", config.getString("state.label"));
-        //        assertNotNull(config.getString("deposit.userId"));
-        assertEquals("Deposit upload has been completed", config.getString("state.description"));
-        //        assertEquals("AUDIENCE", config.getString("bag-store.bag-name"));
+        assertEquals("SUBMITTED", config.getString("state.label"));
+        assertEquals("user001", config.getString("depositor.userId"));
+        assertEquals("Deposit is valid and ready for post-submission processing", config.getString("state.description"));
+        assertEquals("audiences", config.getString("bag-store.bag-name"));
 
     }
 
@@ -259,9 +231,12 @@ class CollectionHandlerImplTest {
 
         var multiPart = new MultiPart();
         var payloadPart = new BodyPart(MediaType.valueOf("application/zip"));
-        payloadPart.getHeaders().add("content-disposition", "attachment; filename=bag.zip; name=payload");
-        payloadPart.getHeaders().add("content-md5", "bc27e20467a773501a4ae37fb85a9c3f");
-        payloadPart.getHeaders().add("packaging", "http://purl.org/net/sword/package/BagIt");
+        payloadPart.getHeaders()
+            .add("content-disposition", "attachment; filename=bag.zip; name=payload");
+        payloadPart.getHeaders()
+            .add("content-md5", "bc27e20467a773501a4ae37fb85a9c3f");
+        payloadPart.getHeaders()
+            .add("packaging", "http://purl.org/net/sword/package/BagIt");
         payloadPart.entity(path.openStream());
 
         multiPart.bodyPart(payloadPart);
@@ -269,19 +244,29 @@ class CollectionHandlerImplTest {
 
         var url = String.format("http://localhost:%s/collection/1", EXT.getLocalPort());
 
-        //        url = "http://localhost:20100/collection/1";
-
-        var result = EXT.client()
-            .register(MultiPartFeature.class)
-            .target(url)
-            .request()
+        var result = buildRequest("/collection/1")
             .header("content-length", 1000)
             .header("in-progress", "true")
-            .header("authorization", "Basic dXNlcjAwMTp1c2VyMDAx")
-            //            .header("authorization", "Basic YTp1c2VyMDAxxx")
             .post(Entity.entity(multiPart, multiPart.getMediaType()));
 
         assertEquals(201, result.getStatus());
-        System.out.println("RESULT: " + result);
+        var receipt = result.readEntity(Entry.class);
+        var parts = receipt.getId()
+            .split("/");
+        var id = parts[parts.length - 1];
+        var firstPath = Path.of("data/tmp/1/uploads/", id);
+    }
+
+    FileBasedConfiguration getProperties(Path path) throws ConfigurationException {
+        var params = new Parameters();
+        var paramConfig = params.properties()
+            .setFileName(path.resolve("deposit.properties")
+                .toString());
+
+        var builder = new FileBasedConfigurationBuilder<FileBasedConfiguration>(
+            PropertiesConfiguration.class, null, true).configure(
+            paramConfig);
+
+        return builder.getConfiguration();
     }
 }

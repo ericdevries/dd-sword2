@@ -15,6 +15,7 @@
  */
 package nl.knaw.dans.sword2.service;
 
+import java.util.concurrent.BlockingQueue;
 import nl.knaw.dans.sword2.Deposit;
 import nl.knaw.dans.sword2.DepositState;
 import nl.knaw.dans.sword2.auth.Depositor;
@@ -27,6 +28,7 @@ import nl.knaw.dans.sword2.exceptions.HashMismatchException;
 import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
 import nl.knaw.dans.sword2.exceptions.InvalidPartialFileException;
 import nl.knaw.dans.sword2.exceptions.NotEnoughDiskSpaceException;
+import nl.knaw.dans.sword2.service.DepositFinalizerManager.DepositFinalizerTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +39,6 @@ import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -50,21 +51,24 @@ public class DepositHandlerImpl implements DepositHandler {
     private final DepositPropertiesManager depositPropertiesManager;
     private final Sword2Config sword2Config;
     private final CollectionManager collectionManager;
-    private final ExecutorService executorService;
     private final UserManager userManager;
+    private final BlockingQueue<DepositFinalizerTask> depositFinalizerQueue;
+
 
     public DepositHandlerImpl(Sword2Config sword2Config,
         BagExtractor bagExtractor,
         FileService fileService,
         DepositPropertiesManager depositPropertiesManager,
-        CollectionManager collectionManager, ExecutorService executorService, UserManager userManager) {
+        CollectionManager collectionManager, UserManager userManager,
+        BlockingQueue<DepositFinalizerTask> depositFinalizerQueue
+    ) {
         this.sword2Config = sword2Config;
         this.bagExtractor = bagExtractor;
         this.fileService = fileService;
         this.depositPropertiesManager = depositPropertiesManager;
         this.collectionManager = collectionManager;
-        this.executorService = executorService;
         this.userManager = userManager;
+        this.depositFinalizerQueue = depositFinalizerQueue;
     }
 
     @Override
@@ -215,14 +219,17 @@ public class DepositHandlerImpl implements DepositHandler {
             return;
         }
 
-        var collection = collectionManager.getCollectionByName(deposit.getCollectionId());
+        var collection = collectionManager.getCollectionByPath(deposit.getCollectionId());
         var path = getUploadPath(collection, deposit.getId());
 
         deposit.setState(DepositState.UPLOADED);
         depositPropertiesManager.saveProperties(path, deposit);
 
-        executorService.execute(new DepositFinalizer(deposit.getId(), this));
-
+        try {
+            depositFinalizerQueue.put(new DepositFinalizerTask(deposit.getId(), false));
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -231,8 +238,12 @@ public class DepositHandlerImpl implements DepositHandler {
         var path = deposit.getPath();
         var depositor = userManager.getDepositorById(deposit.getDepositor());
 
+        if (1 == 1) {
+            throw new Exception("OH MY");
+        }
         log.info("Finalizing deposit with id {}", depositId);
         deposit.setState(DepositState.FINALIZING);
+        deposit.setStateDescription("Finalizing deposit");
         depositPropertiesManager.saveProperties(path, deposit);
 
         log.info("Extracting files for deposit {}", depositId);
@@ -242,6 +253,7 @@ public class DepositHandlerImpl implements DepositHandler {
         log.info("Bag dir found, it is named {}", bagDir);
 
         deposit.setState(DepositState.SUBMITTED);
+        deposit.setStateDescription("Deposit is valid and ready for post-submission processing");
         deposit.setBagName(bagDir.getFileName().toString());
         deposit.setMimeType(null);
         depositPropertiesManager.saveProperties(path, deposit);

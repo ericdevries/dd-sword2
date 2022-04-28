@@ -15,43 +15,51 @@
  */
 package nl.knaw.dans.sword2.service;
 
+import java.util.concurrent.BlockingQueue;
 import nl.knaw.dans.sword2.exceptions.CollectionNotFoundException;
 import nl.knaw.dans.sword2.exceptions.DepositNotFoundException;
 import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
 import nl.knaw.dans.sword2.exceptions.InvalidPartialFileException;
+import nl.knaw.dans.sword2.service.DepositFinalizerManager.DepositFinalizerTask;
 
 public class DepositFinalizer implements Runnable {
 
     private final DepositHandler depositHandler;
     private final String depositId;
+    private final BlockingQueue<DepositFinalizerTask> taskQueue;
 
-    public DepositFinalizer(String depositId, DepositHandler depositHandler) {
+
+
+    public DepositFinalizer(String depositId,
+        DepositHandler depositHandler,
+        BlockingQueue<DepositFinalizerTask> taskQueue
+    ) {
         this.depositId = depositId;
         this.depositHandler = depositHandler;
+        this.taskQueue = taskQueue;
     }
 
     @Override
     public void run() {
 
         try {
-            System.out.println("FINALIZING");
             var deposit = depositHandler.finalizeDeposit(depositId);
-            System.out.println("DONE: " + deposit);
-        }
-        catch (DepositNotFoundException e) {
+        } catch (DepositNotFoundException e) {
             e.printStackTrace();
-        }
-        catch (Exception e) {
+        } catch (InvalidDepositException e) {
             e.printStackTrace();
-        }
-        catch (InvalidDepositException e) {
+        } catch (InvalidPartialFileException e) {
             e.printStackTrace();
-        }
-        catch (InvalidPartialFileException e) {
+        } catch (CollectionNotFoundException e) {
             e.printStackTrace();
-        }
-        catch (CollectionNotFoundException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            try {
+                System.out.println("RETRYING ");
+                taskQueue.put(new DepositFinalizerTask(this.depositId, true));
+            } catch (InterruptedException ex) {
+                ex.printStackTrace();
+            }
         }
     }
+
 }

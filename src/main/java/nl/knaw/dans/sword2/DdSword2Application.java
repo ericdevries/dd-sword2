@@ -23,6 +23,8 @@ import io.dropwizard.auth.basic.BasicCredentialAuthFilter;
 import io.dropwizard.forms.MultiPartBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import nl.knaw.dans.sword2.auth.Depositor;
 import nl.knaw.dans.sword2.auth.SwordAuthenticator;
 import nl.knaw.dans.sword2.resource.CollectionHandlerImpl;
@@ -32,6 +34,9 @@ import nl.knaw.dans.sword2.resource.StatementHandlerImpl;
 import nl.knaw.dans.sword2.service.BagExtractorImpl;
 import nl.knaw.dans.sword2.service.ChecksumCalculatorImpl;
 import nl.knaw.dans.sword2.service.CollectionManagerImpl;
+import nl.knaw.dans.sword2.service.DepositFinalizer;
+import nl.knaw.dans.sword2.service.DepositFinalizerManager;
+import nl.knaw.dans.sword2.service.DepositFinalizerManager.DepositFinalizerTask;
 import nl.knaw.dans.sword2.service.DepositHandlerImpl;
 import nl.knaw.dans.sword2.service.DepositPropertiesManagerImpl;
 import nl.knaw.dans.sword2.service.DepositReceiptFactoryImpl;
@@ -67,9 +72,14 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
 
         var userManager = new UserManagerImpl(configuration.getUsers());
 
-        var executorService = configuration.getSword2().getFinalizingQueue()
+        var executorService = configuration.getSword2()
+            .getFinalizingQueue()
             .build(environment);
-        var collectionManager = new CollectionManagerImpl(configuration.getSword2().getCollections());
+
+        var queue = new ArrayBlockingQueue<DepositFinalizerTask>(configuration.getSword2().getFinalizingQueue().getMaxQueueSize());
+
+        var collectionManager = new CollectionManagerImpl(configuration.getSword2()
+            .getCollections());
 
         var zipService = new ZipServiceImpl(fileService);
 
@@ -77,21 +87,26 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
         var depositHandler = new DepositHandlerImpl(configuration.getSword2(),
             bagExtractor,
             fileService,
-            depositPropertiesManager, collectionManager, executorService, userManager);
+            depositPropertiesManager, collectionManager, userManager, queue);
 
         var depositReceiptFactory = new DepositReceiptFactoryImpl(configuration.getSword2()
             .getBaseUrl());
 
-        environment.jersey().register(MultiPartFeature.class);
+        var depositFinalizerManager = new DepositFinalizerManager(executorService, depositHandler, queue);
+
+        environment.jersey()
+            .register(MultiPartFeature.class);
         // Set up authentication
-        environment.jersey().register(new AuthDynamicFeature(
-            new BasicCredentialAuthFilter.Builder<Depositor>()
-                .setAuthenticator(new SwordAuthenticator(configuration.getUsers()))
-                .setRealm("SWORD2")
-                .buildAuthFilter()));
+        environment.jersey()
+            .register(new AuthDynamicFeature(
+                new BasicCredentialAuthFilter.Builder<Depositor>()
+                    .setAuthenticator(new SwordAuthenticator(configuration.getUsers()))
+                    .setRealm("SWORD2")
+                    .buildAuthFilter()));
 
         // For @Auth
-        environment.jersey().register(new AuthValueFactoryProvider.Binder<>(Depositor.class));
+        environment.jersey()
+            .register(new AuthValueFactoryProvider.Binder<>(Depositor.class));
 
         // Resources
         environment.jersey()
@@ -102,7 +117,8 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
             .register(new ContainerHandlerImpl(depositReceiptFactory, depositHandler));
 
         environment.jersey()
-            .register(new StatementHandlerImpl(configuration.getSword2().getBaseUrl(), depositHandler));
+            .register(new StatementHandlerImpl(configuration.getSword2()
+                .getBaseUrl(), depositHandler));
 
         environment.jersey()
             .register(new ServiceDocumentHandlerImpl(configuration.getUsers(),
