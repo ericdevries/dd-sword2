@@ -42,16 +42,12 @@ public class CollectionHandlerImpl implements CollectionHandler {
     private final DepositHandler depositHandler;
     private final DepositReceiptFactory depositReceiptFactory;
 
-    private final ChecksumCalculator checksumCalculator;
-
     @Inject
     public CollectionHandlerImpl(DepositHandler depositHandler,
-        DepositReceiptFactory depositReceiptFactory,
-        ChecksumCalculator checksumCalculator
+        DepositReceiptFactory depositReceiptFactory
     ) {
         this.depositHandler = depositHandler;
         this.depositReceiptFactory = depositReceiptFactory;
-        this.checksumCalculator = checksumCalculator;
     }
 
     @Override

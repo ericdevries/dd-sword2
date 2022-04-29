@@ -38,6 +38,8 @@ public interface DepositHandler {
 
     Deposit getDeposit(String depositId, Depositor depositor) throws DepositNotFoundException;
 
+    Deposit getDeposit(String depositId) throws DepositNotFoundException;
+
     Deposit createDepositWithPayload(String collectionId, Depositor depositor, boolean inProgress, MediaType contentType, String hash, String packaging, String filename, long filesize, InputStream inputStream)
         throws CollectionNotFoundException, IOException, NotEnoughDiskSpaceException, HashMismatchException;
 

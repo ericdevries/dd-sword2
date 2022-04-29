@@ -18,7 +18,7 @@ package nl.knaw.dans.sword2.service.finalizer;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
-import nl.knaw.dans.sword2.service.DepositFinalizer;
+
 import nl.knaw.dans.sword2.service.DepositHandler;
 
 public class DepositFinalizerListener implements Runnable {

@@ -31,6 +31,7 @@ import nl.knaw.dans.sword2.resource.ContainerHandlerImpl;
 import nl.knaw.dans.sword2.resource.ServiceDocumentHandlerImpl;
 import nl.knaw.dans.sword2.resource.StatementHandlerImpl;
 import nl.knaw.dans.sword2.service.BagExtractorImpl;
+import nl.knaw.dans.sword2.service.BagItManagerImpl;
 import nl.knaw.dans.sword2.service.ChecksumCalculatorImpl;
 import nl.knaw.dans.sword2.service.CollectionManagerImpl;
 import nl.knaw.dans.sword2.service.DepositHandlerImpl;
@@ -68,6 +69,7 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
         var depositPropertiesManager = new DepositPropertiesManagerImpl(configuration.getSword2());
         var checksumCalculator = new ChecksumCalculatorImpl();
 
+        var bagItManager = new BagItManagerImpl();
         var userManager = new UserManagerImpl(configuration.getUsers());
 
         var executorService = configuration.getSword2()
@@ -87,7 +89,7 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
         var depositHandler = new DepositHandlerImpl(configuration.getSword2(),
             bagExtractor,
             fileService,
-            depositPropertiesManager, collectionManager, userManager, queue);
+            depositPropertiesManager, collectionManager, userManager, queue, bagItManager);
 
         var depositReceiptFactory = new DepositReceiptFactoryImpl(configuration.getSword2()
             .getBaseUrl());
@@ -116,8 +118,8 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
 
         // Resources
         environment.jersey()
-            .register(new CollectionHandlerImpl(depositHandler, depositReceiptFactory,
-                checksumCalculator));
+            .register(new CollectionHandlerImpl(depositHandler, depositReceiptFactory
+            ));
 
         environment.jersey()
             .register(new ContainerHandlerImpl(depositReceiptFactory, depositHandler));

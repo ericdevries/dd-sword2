@@ -52,14 +52,15 @@ public class DepositHandlerImpl implements DepositHandler {
     private final CollectionManager collectionManager;
     private final UserManager userManager;
     private final BlockingQueue<DepositFinalizerEvent> depositFinalizerQueue;
-
+    private final BagItManager bagItManager;
 
     public DepositHandlerImpl(Sword2Config sword2Config,
         BagExtractor bagExtractor,
         FileService fileService,
         DepositPropertiesManager depositPropertiesManager,
         CollectionManager collectionManager, UserManager userManager,
-        BlockingQueue<DepositFinalizerEvent> depositFinalizerQueue
+        BlockingQueue<DepositFinalizerEvent> depositFinalizerQueue,
+        BagItManager bagItManager
     ) {
         this.sword2Config = sword2Config;
         this.bagExtractor = bagExtractor;
@@ -68,6 +69,7 @@ public class DepositHandlerImpl implements DepositHandler {
         this.collectionManager = collectionManager;
         this.userManager = userManager;
         this.depositFinalizerQueue = depositFinalizerQueue;
+        this.bagItManager = bagItManager;
     }
 
     @Override
@@ -213,7 +215,8 @@ public class DepositHandlerImpl implements DepositHandler {
             depositId));
     }
 
-    Deposit getDeposit(String depositId) throws DepositNotFoundException {
+    @Override
+    public Deposit getDeposit(String depositId) throws DepositNotFoundException {
         var collections = collectionManager.getCollections();
 
         for (var collection : collections) {
@@ -286,6 +289,8 @@ public class DepositHandlerImpl implements DepositHandler {
         deposit.setMimeType(null);
         depositPropertiesManager.saveProperties(path, deposit);
 
+        var metadata = bagItManager.getBagItMetaData(path.resolve(deposit.getBagName()), depositId);
+        System.out.println("METADATA: " + metadata);
         // TODO get sword token
         // TODO get other stuff based on BagIt format
         removeZipFiles(path);

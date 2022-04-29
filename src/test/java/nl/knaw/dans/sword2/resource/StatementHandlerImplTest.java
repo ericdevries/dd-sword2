@@ -17,6 +17,9 @@ package nl.knaw.dans.sword2.resource;
 
 import io.dropwizard.testing.junit5.DropwizardExtensionsSupport;
 import io.dropwizard.testing.junit5.ResourceExtension;
+import nl.knaw.dans.sword2.Deposit;
+import nl.knaw.dans.sword2.DepositState;
+import nl.knaw.dans.sword2.exceptions.DepositNotFoundException;
 import nl.knaw.dans.sword2.models.statement.Feed;
 import nl.knaw.dans.sword2.service.DepositHandler;
 import nl.knaw.dans.sword2.service.DepositHandlerImpl;
@@ -29,6 +32,7 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import java.io.StringWriter;
 import java.net.URI;
+import java.time.OffsetDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -41,9 +45,19 @@ class StatementHandlerImplTest {
         .build();
 
     @Test
-    void testStatement() throws JAXBException {
+    void testStatement() throws JAXBException, DepositNotFoundException {
+        var deposit = new Deposit();
+        deposit.setId("a03ca6f1-608b-4247-8c22-99681b8494a0");
+        deposit.setCreated(OffsetDateTime.now());
+        deposit.setState(DepositState.SUBMITTED);
+        deposit.setStateDescription("Submitted");
+
+        Mockito.when(depositHandler.getDeposit(Mockito.anyString(), Mockito.any()))
+            .thenReturn(deposit);
+
         var response = EXT.client().target("/statement/a03ca6f1-608b-4247-8c22-99681b8494a0")
             .request().get();
+
         assertEquals(200, response.getStatus());
 
         var feed = response.readEntity(Feed.class);

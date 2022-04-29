@@ -15,6 +15,7 @@
  */
 package nl.knaw.dans.sword2.resource;
 
+import io.swagger.annotations.ExampleProperty;
 import nl.knaw.dans.sword2.auth.Depositor;
 import nl.knaw.dans.sword2.exceptions.DepositNotFoundException;
 import nl.knaw.dans.sword2.models.entry.Link;
@@ -60,6 +61,9 @@ public class StatementHandlerImpl implements StatementHandler {
                 .build();
         }
         catch (DepositNotFoundException e) {
+            e.printStackTrace();
+        }
+        catch (Exception e) {
             e.printStackTrace();
         }
 

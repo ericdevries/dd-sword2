@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.sword2.service;
+package nl.knaw.dans.sword2.service.finalizer;
 
 import java.util.concurrent.BlockingQueue;
 import nl.knaw.dans.sword2.exceptions.CollectionNotFoundException;
 import nl.knaw.dans.sword2.exceptions.DepositNotFoundException;
 import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
 import nl.knaw.dans.sword2.exceptions.InvalidPartialFileException;
+import nl.knaw.dans.sword2.service.DepositHandler;
 import nl.knaw.dans.sword2.service.finalizer.DepositFinalizerEvent;
 import nl.knaw.dans.sword2.service.finalizer.DepositFinalizerRetryEvent;
 
