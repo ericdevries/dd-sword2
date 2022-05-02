@@ -66,7 +66,7 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
     public void run(final DdSword2Configuration configuration, final Environment environment)
         throws Exception {
         var fileService = new FileServiceImpl();
-        var depositPropertiesManager = new DepositPropertiesManagerImpl(configuration.getSword2());
+        var depositPropertiesManager = new DepositPropertiesManagerImpl();
         var checksumCalculator = new ChecksumCalculatorImpl();
 
         var bagItManager = new BagItManagerImpl();
@@ -85,7 +85,7 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
 
         var zipService = new ZipServiceImpl(fileService);
 
-        var bagExtractor = new BagExtractorImpl(zipService, fileService);
+        var bagExtractor = new BagExtractorImpl(zipService, fileService, checksumCalculator);
         var depositHandler = new DepositHandlerImpl(configuration.getSword2(),
             bagExtractor,
             fileService,

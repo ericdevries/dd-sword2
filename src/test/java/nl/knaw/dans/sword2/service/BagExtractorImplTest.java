@@ -15,6 +15,7 @@
  */
 package nl.knaw.dans.sword2.service;
 
+import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
 import nl.knaw.dans.sword2.exceptions.InvalidPartialFileException;
 import org.apache.commons.io.FileUtils;
 import org.assertj.core.api.Assertions;
@@ -40,6 +41,7 @@ class BagExtractorImplTest {
     private final FileService fileService = new FileServiceImpl();
     private final ZipService zipService = new ZipServiceImpl(fileService);
     private final Path testPath = Path.of("data/tmp/bagextractor/");
+    private final ChecksumCalculator checksumCalculator = new ChecksumCalculatorImpl();
 
     Path getZipFile(String name) {
         var zipName = "/zips/" + name;
@@ -61,7 +63,7 @@ class BagExtractorImplTest {
     @Test
     void testGenerateEmptyFileMappingForEmptyZip() throws IOException {
         var file = getZipFile("empty.zip");
-        var mapping = new BagExtractorImpl(zipService, fileService).generateFilePathMapping(file);
+        var mapping = new BagExtractorImpl(zipService, fileService, checksumCalculator).generateFilePathMapping(file);
 
         assertTrue(mapping.isEmpty());
     }
@@ -69,7 +71,7 @@ class BagExtractorImplTest {
     @Test
     void testGenerateMappingsForFilesUnderPrefix() throws IOException {
         var file = getZipFile("mix.zip");
-        var mapping = new BagExtractorImpl(zipService, fileService)
+        var mapping = new BagExtractorImpl(zipService, fileService, checksumCalculator)
             .generateFilePathMapping(file, Pattern.compile("subfolder/"));
 
         Assertions.assertThat(mapping.keySet()).containsOnly("subfolder/test.txt",
@@ -80,20 +82,20 @@ class BagExtractorImplTest {
     }
 
     @Test
-    void testShouldUnzipEmptyZip() throws IOException {
+    void testShouldUnzipEmptyZip() throws IOException, InvalidDepositException {
         var zipFile = getZipFile("empty.zip");
 
-        new BagExtractorImpl(zipService, fileService)
+        new BagExtractorImpl(zipService, fileService, checksumCalculator)
             .extractWithFilePathMapping(zipFile, testPath.resolve("emptydir"), Map.of());
 
         assertEquals(0, fileService.listFiles(testPath.resolve("emptydir")).count());
     }
 
     @Test
-    void testShouldUnzipFileWithOneUnmappedRootEntry() throws IOException {
+    void testShouldUnzipFileWithOneUnmappedRootEntry() throws IOException, InvalidDepositException {
         var zipFile = getZipFile("one-entry.zip");
 
-        new BagExtractorImpl(zipService, fileService)
+        new BagExtractorImpl(zipService, fileService, checksumCalculator)
             .extractWithFilePathMapping(zipFile, testPath.resolve("dir1"), Map.of());
 
         assertEquals(1, fileService.listFiles(testPath.resolve("dir1")).count());
@@ -103,11 +105,11 @@ class BagExtractorImplTest {
     }
 
     @Test
-    void testShouldUnzipFileWithOneMappedRootEntry() throws IOException {
+    void testShouldUnzipFileWithOneMappedRootEntry() throws IOException, InvalidDepositException {
         var zipFile = getZipFile("one-entry.zip");
         var filePathMapping = Map.of("test.txt", "renamed.txt");
 
-        new BagExtractorImpl(zipService, fileService)
+        new BagExtractorImpl(zipService, fileService, checksumCalculator)
             .extractWithFilePathMapping(zipFile, testPath.resolve("dir1"), filePathMapping);
 
         assertEquals(1, fileService.listFiles(testPath.resolve("dir1")).count());
@@ -117,11 +119,11 @@ class BagExtractorImplTest {
     }
 
     @Test
-    void testShouldUnzipFileWithOneUnmappedEntryInSubfolder() throws IOException {
+    void testShouldUnzipFileWithOneUnmappedEntryInSubfolder() throws IOException, InvalidDepositException {
         var zipFile = getZipFile("one-entry-in-subfolder.zip");
         var filePathMapping = new HashMap<String, String>();
 
-        new BagExtractorImpl(zipService, fileService)
+        new BagExtractorImpl(zipService, fileService, checksumCalculator)
             .extractWithFilePathMapping(zipFile, testPath.resolve("dir1"), filePathMapping);
 
         assertEquals(1, fileService.listDirectories(testPath.resolve("dir1")).size());
@@ -131,11 +133,11 @@ class BagExtractorImplTest {
     }
 
     @Test
-    void testShouldUnzipFileWithOneMappedEntryInSubfolder() throws IOException {
+    void testShouldUnzipFileWithOneMappedEntryInSubfolder() throws IOException, InvalidDepositException {
         var zipFile = getZipFile("one-entry-in-subfolder.zip");
         var filePathMapping = Map.of("subfolder/test.txt", "renamed.txt");
 
-        new BagExtractorImpl(zipService, fileService)
+        new BagExtractorImpl(zipService, fileService, checksumCalculator)
             .extractWithFilePathMapping(zipFile, testPath.resolve("dir1"), filePathMapping);
 
         assertEquals(1, fileService.listFiles(testPath.resolve("dir1")).count());
@@ -145,13 +147,13 @@ class BagExtractorImplTest {
     }
 
     @Test
-    void testShouldUnzipFileWithSeveralEntriesSomeInSubfoldersAndSomeMapped() throws IOException {
+    void testShouldUnzipFileWithSeveralEntriesSomeInSubfoldersAndSomeMapped() throws IOException, InvalidDepositException {
         var zipFile = getZipFile("mix.zip");
         var filePathMapping = Map.of(
             "subfolder/test.txt", "renamed.txt",
             "subfolder2/subsubfolder/leaf.txt", "renamed2.txt");
 
-        new BagExtractorImpl(zipService, fileService)
+        new BagExtractorImpl(zipService, fileService, checksumCalculator)
             .extractWithFilePathMapping(zipFile, testPath.resolve("dir1"), filePathMapping);
 
         assertEquals(3, fileService.listFiles(testPath.resolve("dir1")).count());
@@ -167,7 +169,7 @@ class BagExtractorImplTest {
     }
 
     @Test
-    void testExtractOctetStream() throws Exception, InvalidPartialFileException {
+    void testExtractOctetStream() throws Exception, InvalidPartialFileException, InvalidDepositException {
         // copy a zip into 3 different files
         var zipFile = getZipFile("double-image.zip");
 
@@ -175,7 +177,7 @@ class BagExtractorImplTest {
         var part2 = copyPartOfFile(zipFile, testPath.resolve("part.2"), 1000000, 2000000);
         var part3 = copyPartOfFile(zipFile, testPath.resolve("part.3"), 2000000, Files.size(zipFile));
 
-        new BagExtractorImpl(zipService, fileService)
+        new BagExtractorImpl(zipService, fileService, checksumCalculator)
             .extractOctetStream(testPath, false);
 
         assertEquals(1, fileService.listFiles(testPath).count());

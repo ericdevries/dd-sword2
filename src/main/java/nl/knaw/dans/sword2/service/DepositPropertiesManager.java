@@ -21,11 +21,7 @@ import java.nio.file.Path;
 
 public interface DepositPropertiesManager {
 
-    DepositProperties getProperties(Path path, Deposit deposit);
-
     Deposit getProperties(Path path);
-
-    void saveProperties(Path path, Deposit deposit, DepositProperties properties);
 
     void saveProperties(Path path, Deposit deposit);
 }

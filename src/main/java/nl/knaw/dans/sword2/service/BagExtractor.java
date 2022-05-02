@@ -25,4 +25,5 @@ import java.util.List;
 public interface BagExtractor {
     void extractBag(Path path, String mimeType, boolean filePathMapping) throws Exception, InvalidDepositException, InvalidPartialFileException;
 
+    Path getBagDir(Path path) throws IOException, InvalidDepositException;
 }

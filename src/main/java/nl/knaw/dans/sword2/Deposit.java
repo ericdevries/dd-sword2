@@ -28,6 +28,8 @@ public class Deposit {
     private String depositor;
     private String bagName;
     private String swordToken;
+    private String otherId;
+    private String otherIdVersion;
     private OffsetDateTime created;
     private DepositState state;
     private String stateDescription;
@@ -36,6 +38,22 @@ public class Deposit {
     private boolean inProgress = false;
     private boolean metadataRelevant = true;
     private long contentLength = -1L;
+
+    public String getOtherId() {
+        return otherId;
+    }
+
+    public void setOtherId(String otherId) {
+        this.otherId = otherId;
+    }
+
+    public String getOtherIdVersion() {
+        return otherIdVersion;
+    }
+
+    public void setOtherIdVersion(String otherIdVersion) {
+        this.otherIdVersion = otherIdVersion;
+    }
 
     public String getCollectionId() {
         return collectionId;

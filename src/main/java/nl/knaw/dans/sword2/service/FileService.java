@@ -47,4 +47,9 @@ public interface FileService {
 
     boolean exists(Path path);
 
+    void writeContentToFile(Path path, String content) throws IOException;
+
+    String readFile(Path item) throws IOException;
+
+    List<String> readLines(Path file) throws IOException;
 }

@@ -35,13 +35,11 @@ public class SwordAuthenticator implements Authenticator<BasicCredentials, Depos
 
     @Override
     public Optional<Depositor> authenticate(BasicCredentials credentials) throws AuthenticationException {
-        System.out.println("HELLO THERE: " + userList.size());
         if (userList.size() == 0) {
             throw new AuthenticationException("No users available");
         }
 
         for (var user : userList) {
-            System.out.println("USER: " + user + " - " + credentials.getUsername() + " - " + user.getPasswordHash());
             if (user.getName().equals(credentials.getUsername())) {
                 if (BCrypt.checkpw(credentials.getPassword(), user.getPasswordHash())) {
                     return Optional.of(new Depositor(user.getName(), user.getFilepathMapping(), Set.copyOf(user.getCollections())));

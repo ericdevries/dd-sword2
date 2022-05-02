@@ -229,6 +229,7 @@ public class DepositHandlerImpl implements DepositHandler {
             );
 
             for (var path : searchPaths) {
+                System.out.println("PATH: " + path);
                 if (fileService.exists(path)) {
                     var deposit = depositPropertiesManager.getProperties(path);
                     deposit.setPath(path);
@@ -279,7 +280,7 @@ public class DepositHandlerImpl implements DepositHandler {
         log.info("Extracting files for deposit {}", depositId);
         bagExtractor.extractBag(path, deposit.getMimeType(), depositor.getFilepathMapping());
 
-        var bagDir = getBagDir(path);
+        var bagDir = bagExtractor.getBagDir(path);
         log.info("Bag dir found, it is named {}", bagDir);
 
         deposit.setState(DepositState.SUBMITTED);
@@ -287,13 +288,17 @@ public class DepositHandlerImpl implements DepositHandler {
         deposit.setBagName(bagDir.getFileName()
             .toString());
         deposit.setMimeType(null);
-        depositPropertiesManager.saveProperties(path, deposit);
 
         var metadata = bagItManager.getBagItMetaData(path.resolve(deposit.getBagName()), depositId);
-        System.out.println("METADATA: " + metadata);
-        // TODO get sword token
-        // TODO get other stuff based on BagIt format
+        deposit.setSwordToken(metadata.getSwordToken());
+        deposit.setOtherId(metadata.getOtherId());
+        deposit.setOtherIdVersion(metadata.getOtherIdVersion());
+
+        depositPropertiesManager.saveProperties(path, deposit);
+
         removeZipFiles(path);
+
+        updateManifests(path);
 
         var collection = collectionManager.getCollectionByName(deposit.getCollectionId());
         var targetPath = getDepositPath(collection, depositId);
@@ -302,6 +307,9 @@ public class DepositHandlerImpl implements DepositHandler {
         return deposit;
     }
 
+    private void updateManifests(Path path) {
+
+    }
     private Stream<Path> getDepositFiles(Path path) throws IOException {
         return fileService.listFiles(path)
             .filter(f -> !f.getFileName()
@@ -318,18 +326,6 @@ public class DepositHandlerImpl implements DepositHandler {
                 log.warn("Unable to remove file {}", file, e);
             }
         }
-    }
-
-    private Path getBagDir(Path path) throws IOException, InvalidDepositException {
-        var files = fileService.listDirectories(path);
-
-        if (files.size() != 1) {
-            throw new InvalidDepositException(String.format(
-                "A deposit package must contain exactly one top-level directory, number found: %s",
-                files.size()));
-        }
-
-        return files.get(0);
     }
 
     void assertTempDirHasEnoughDiskspaceMarginForFile(Path destination, long contentLength)

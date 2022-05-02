@@ -27,9 +27,6 @@ public class BagItManagerImpl implements BagItManager {
             var bag = new BagReader().read(path);
             var metadata = new BagItMetaData();
 
-            for (var item: bag.getMetadata().getAll()) {
-                System.out.println("KEY VALUE: " + item.getKey() + " - " + item.getValue());
-            }
             var swordToken = bag.getMetadata().get("Is-Version-Of");
 
             if (swordToken != null) {

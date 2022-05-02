@@ -26,6 +26,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.DigestInputStream;
@@ -128,6 +129,21 @@ public class FileServiceImpl implements FileService {
     @Override
     public boolean exists(Path path) {
         return Files.exists(path);
+    }
+
+    @Override
+    public void writeContentToFile(Path path, String content) throws IOException {
+        Files.write(path, content.getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Override
+    public String readFile(Path item) throws IOException {
+        return Files.readString(item);
+    }
+
+    @Override
+    public List<String> readLines(Path file) throws IOException {
+        return Files.readAllLines(file);
     }
 
 }

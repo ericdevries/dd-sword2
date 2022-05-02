@@ -32,10 +32,8 @@ import java.time.OffsetDateTime;
 @Singleton
 public class DepositPropertiesManagerImpl implements DepositPropertiesManager {
     private final String FILENAME = "deposit.properties";
-    private final Sword2Config sword2Config;
 
-    public DepositPropertiesManagerImpl(Sword2Config sword2Config) {
-        this.sword2Config = sword2Config;
+    public DepositPropertiesManagerImpl() {
     }
 
     private Path getDepositPath(Path path) {
@@ -64,30 +62,6 @@ public class DepositPropertiesManagerImpl implements DepositPropertiesManager {
         }
     }
 
-
-    @Override
-    public DepositProperties getProperties(Path path, Deposit deposit) {
-        var propertiesFile = getDepositPath(path);
-
-        var params = new Parameters();
-        var paramConfig = params.properties()
-            .setFileName(propertiesFile.toString());
-
-        var builder = new FileBasedConfigurationBuilder<FileBasedConfiguration>(PropertiesConfiguration.class, null, true).configure(
-            paramConfig);
-
-        try {
-            var config = builder.getConfiguration();
-            return mapToDepositProperties(config);
-        }
-        catch (ConfigurationException cex) {
-            // loading of the configuration file failed
-            cex.printStackTrace();
-        }
-
-        return null;
-    }
-
     @Override
     public Deposit getProperties(Path path) {
 
@@ -111,50 +85,6 @@ public class DepositPropertiesManagerImpl implements DepositPropertiesManager {
         return null;
     }
 
-    @Override
-    public void saveProperties(Path path, Deposit deposit, DepositProperties properties) {
-        // TODO implement logic for archived (see easy-sword2)
-        var propertiesFile = getDepositPath(path);
-
-        var params = new Parameters();
-        var paramConfig = params.properties()
-            .setFileName(propertiesFile.toString());
-
-        var builder = new FileBasedConfigurationBuilder<FileBasedConfiguration>(PropertiesConfiguration.class, null, true).configure(
-            paramConfig);
-
-        try {
-            var config = builder.getConfiguration();
-            mapToConfig(config, properties);
-            builder.save();
-        }
-        catch (ConfigurationException cex) {
-            // loading of the configuration file failed
-            cex.printStackTrace();
-        }
-
-    }
-
-
-    DepositProperties mapToDepositProperties(Configuration config) {
-        var depositProperties = new DepositProperties();
-        depositProperties.setBagStoreBagId(config.getString("bag-store.bag-id"));
-        depositProperties.setDataverseBagId(config.getString("dataverse.bag-id"));
-        depositProperties.setCreationTimestamp(config.getString("creation.timestamp"));
-        depositProperties.setDepositOrigin(config.getString("deposit.origin"));
-        depositProperties.setDepositorUserId(config.getString("depositor.userId"));
-        depositProperties.setStateDescription(config.getString("state.description"));
-        depositProperties.setBagStoreBagName(config.getString("bag-store.bag-name"));
-        depositProperties.setDataverseSwordToken(config.getString("dataverse.sword-token"));
-        depositProperties.setContentType(config.getString("easy-sword2.client-message.content-type"));
-
-        if (config.getString("state.label") != null) {
-            depositProperties.setState(DepositState.valueOf(config.getString("state.label")));
-        }
-
-        return depositProperties;
-    }
-
     Deposit mapToDeposit(Configuration config) {
         var deposit = new Deposit();
         deposit.setId(config.getString("bag-store.bag-id"));
@@ -169,29 +99,9 @@ public class DepositPropertiesManagerImpl implements DepositPropertiesManager {
         return deposit;
     }
 
-    void mapToConfig(Configuration config, DepositProperties depositProperties) {
-        config.setProperty("bag-store.bag-id", depositProperties.getBagStoreBagId());
-        config.setProperty("dataverse.bag-id", depositProperties.getDataverseBagId());
-        config.setProperty("creation.timestamp", depositProperties.getCreationTimestamp());
-        config.setProperty("deposit.origin", depositProperties.getDepositOrigin());
-        config.setProperty("depositor.userId", depositProperties.getDepositorUserId());
-        config.setProperty("state.label", depositProperties.getState()
-            .toString());
-        config.setProperty("state.description", depositProperties.getStateDescription());
-        config.setProperty("bag-store.bag-name", depositProperties.getBagStoreBagName());
-        config.setProperty("dataverse.sword-token", depositProperties.getDataverseSwordToken());
-
-        if (depositProperties.getContentType() != null) {
-            config.setProperty("easy-sword2.client-message.content-type", depositProperties.getContentType());
-        } else {
-            config.clearProperty("easy-sword2.client-message.content-type");
-        }
-    }
-
-
     void mapToConfig(Configuration config, Deposit deposit) {
         config.setProperty("bag-store.bag-id", deposit.getId());
-        config.setProperty("dataverse.bag-id", String.format("urn:uuid:%s" ,deposit.getId()));
+        config.setProperty("dataverse.bag-id", String.format("urn:uuid:%s", deposit.getId()));
         config.setProperty("creation.timestamp", deposit.getCreated());
         config.setProperty("deposit.origin", "SWORD2");
         config.setProperty("depositor.userId", deposit.getDepositor());
@@ -200,9 +110,18 @@ public class DepositPropertiesManagerImpl implements DepositPropertiesManager {
         config.setProperty("bag-store.bag-name", deposit.getBagName());
         config.setProperty("dataverse.sword-token", deposit.getSwordToken());
 
+        if (deposit.getOtherId() != null && !deposit.getOtherId().isEmpty()) {
+            config.setProperty("dataverse.other-id", deposit.getOtherId());
+        }
+
+        if (deposit.getOtherIdVersion() != null && !deposit.getOtherIdVersion().isEmpty()) {
+            config.setProperty("dataverse.other-id-version", deposit.getOtherIdVersion());
+        }
+
         if (deposit.getMimeType() != null) {
             config.setProperty("easy-sword2.client-message.content-type", deposit.getMimeType());
-        } else {
+        }
+        else {
             config.clearProperty("easy-sword2.client-message.content-type");
         }
     }

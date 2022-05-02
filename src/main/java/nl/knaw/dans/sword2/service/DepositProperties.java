@@ -31,6 +31,7 @@ public class DepositProperties {
     private String md5;
     private String contentType;
 
+
     public String getContentType() {
         return contentType;
     }
