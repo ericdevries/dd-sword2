@@ -47,8 +47,10 @@ public class ChecksumCalculatorImpl implements
         return MessageDigest.getInstance("MD5");
     }
 
-    String calculateChecksum(Path path, String algorithm)
+    @Override
+    public String calculateChecksum(Path path, String algorithm)
         throws NoSuchAlgorithmException, IOException {
+
         var md = MessageDigest.getInstance(algorithm);
         var is = Files.newInputStream(path);
         var buf = new byte[1024 * 8];

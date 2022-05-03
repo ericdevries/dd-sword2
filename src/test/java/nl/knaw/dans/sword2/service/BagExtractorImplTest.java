@@ -22,6 +22,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -41,6 +42,7 @@ class BagExtractorImplTest {
     private final FileService fileService = new FileServiceImpl();
     private final ZipService zipService = new ZipServiceImpl(fileService);
     private final Path testPath = Path.of("data/tmp/bagextractor/");
+    private final BagItManager bagItManager = Mockito.mock(BagItManager.class);
     private final ChecksumCalculator checksumCalculator = new ChecksumCalculatorImpl();
 
     Path getZipFile(String name) {
@@ -52,18 +54,19 @@ class BagExtractorImplTest {
 
     @BeforeEach
     void startUp() throws IOException {
+        FileUtils.deleteDirectory(testPath.toFile());
         fileService.ensureDirectoriesExist(testPath);
     }
 
     @AfterEach
     void tearDown() throws IOException {
-        FileUtils.deleteDirectory(testPath.toFile());
+//        FileUtils.deleteDirectory(testPath.toFile());
     }
 
     @Test
     void testGenerateEmptyFileMappingForEmptyZip() throws IOException {
         var file = getZipFile("empty.zip");
-        var mapping = new BagExtractorImpl(zipService, fileService, checksumCalculator).generateFilePathMapping(file);
+        var mapping = new BagExtractorImpl(zipService, fileService, bagItManager).generateFilePathMapping(file);
 
         assertTrue(mapping.isEmpty());
     }
@@ -71,7 +74,7 @@ class BagExtractorImplTest {
     @Test
     void testGenerateMappingsForFilesUnderPrefix() throws IOException {
         var file = getZipFile("mix.zip");
-        var mapping = new BagExtractorImpl(zipService, fileService, checksumCalculator)
+        var mapping = new BagExtractorImpl(zipService, fileService, bagItManager)
             .generateFilePathMapping(file, Pattern.compile("subfolder/"));
 
         Assertions.assertThat(mapping.keySet()).containsOnly("subfolder/test.txt",
@@ -85,7 +88,7 @@ class BagExtractorImplTest {
     void testShouldUnzipEmptyZip() throws IOException, InvalidDepositException {
         var zipFile = getZipFile("empty.zip");
 
-        new BagExtractorImpl(zipService, fileService, checksumCalculator)
+        new BagExtractorImpl(zipService, fileService, bagItManager)
             .extractWithFilePathMapping(zipFile, testPath.resolve("emptydir"), Map.of());
 
         assertEquals(0, fileService.listFiles(testPath.resolve("emptydir")).count());
@@ -95,7 +98,7 @@ class BagExtractorImplTest {
     void testShouldUnzipFileWithOneUnmappedRootEntry() throws IOException, InvalidDepositException {
         var zipFile = getZipFile("one-entry.zip");
 
-        new BagExtractorImpl(zipService, fileService, checksumCalculator)
+        new BagExtractorImpl(zipService, fileService, bagItManager)
             .extractWithFilePathMapping(zipFile, testPath.resolve("dir1"), Map.of());
 
         assertEquals(1, fileService.listFiles(testPath.resolve("dir1")).count());
@@ -109,7 +112,7 @@ class BagExtractorImplTest {
         var zipFile = getZipFile("one-entry.zip");
         var filePathMapping = Map.of("test.txt", "renamed.txt");
 
-        new BagExtractorImpl(zipService, fileService, checksumCalculator)
+        new BagExtractorImpl(zipService, fileService, bagItManager)
             .extractWithFilePathMapping(zipFile, testPath.resolve("dir1"), filePathMapping);
 
         assertEquals(1, fileService.listFiles(testPath.resolve("dir1")).count());
@@ -123,7 +126,7 @@ class BagExtractorImplTest {
         var zipFile = getZipFile("one-entry-in-subfolder.zip");
         var filePathMapping = new HashMap<String, String>();
 
-        new BagExtractorImpl(zipService, fileService, checksumCalculator)
+        new BagExtractorImpl(zipService, fileService, bagItManager)
             .extractWithFilePathMapping(zipFile, testPath.resolve("dir1"), filePathMapping);
 
         assertEquals(1, fileService.listDirectories(testPath.resolve("dir1")).size());
@@ -137,7 +140,7 @@ class BagExtractorImplTest {
         var zipFile = getZipFile("one-entry-in-subfolder.zip");
         var filePathMapping = Map.of("subfolder/test.txt", "renamed.txt");
 
-        new BagExtractorImpl(zipService, fileService, checksumCalculator)
+        new BagExtractorImpl(zipService, fileService, bagItManager)
             .extractWithFilePathMapping(zipFile, testPath.resolve("dir1"), filePathMapping);
 
         assertEquals(1, fileService.listFiles(testPath.resolve("dir1")).count());
@@ -153,7 +156,7 @@ class BagExtractorImplTest {
             "subfolder/test.txt", "renamed.txt",
             "subfolder2/subsubfolder/leaf.txt", "renamed2.txt");
 
-        new BagExtractorImpl(zipService, fileService, checksumCalculator)
+        new BagExtractorImpl(zipService, fileService, bagItManager)
             .extractWithFilePathMapping(zipFile, testPath.resolve("dir1"), filePathMapping);
 
         assertEquals(3, fileService.listFiles(testPath.resolve("dir1")).count());
@@ -177,7 +180,7 @@ class BagExtractorImplTest {
         var part2 = copyPartOfFile(zipFile, testPath.resolve("part.2"), 1000000, 2000000);
         var part3 = copyPartOfFile(zipFile, testPath.resolve("part.3"), 2000000, Files.size(zipFile));
 
-        new BagExtractorImpl(zipService, fileService, checksumCalculator)
+        new BagExtractorImpl(zipService, fileService, bagItManager)
             .extractOctetStream(testPath, false);
 
         assertEquals(1, fileService.listFiles(testPath).count());

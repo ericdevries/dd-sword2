@@ -42,12 +42,12 @@ class DepositHandlerImplTest {
     final FileService fileService = new FileServiceImpl();
     final ChecksumCalculator checksumCalculator = new ChecksumCalculatorImpl();
     final ZipService zipService = new ZipServiceImpl(fileService);
-    final BagExtractor bagExtractor = new BagExtractorImpl(zipService, fileService, checksumCalculator);
+    final BagItManager bagItManager = new BagItManagerImpl(fileService, checksumCalculator);
+    final BagExtractor bagExtractor = new BagExtractorImpl(zipService, fileService, bagItManager);
     final DepositPropertiesManager depositPropertiesManager = new DepositPropertiesManagerImpl();
     final CollectionManager collectionManager = Mockito.mock(CollectionManager.class);
     final UserManager userManager = Mockito.mock(UserManager.class);
     final BlockingQueue queue = Mockito.mock(BlockingQueue.class);
-    final BagItManager bagItManager = new BagItManagerImpl();
 
     @BeforeEach
     void beforeEach() throws IOException {

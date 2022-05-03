@@ -69,7 +69,7 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
         var depositPropertiesManager = new DepositPropertiesManagerImpl();
         var checksumCalculator = new ChecksumCalculatorImpl();
 
-        var bagItManager = new BagItManagerImpl();
+        var bagItManager = new BagItManagerImpl(fileService, checksumCalculator);
         var userManager = new UserManagerImpl(configuration.getUsers());
 
         var executorService = configuration.getSword2()
@@ -85,7 +85,7 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
 
         var zipService = new ZipServiceImpl(fileService);
 
-        var bagExtractor = new BagExtractorImpl(zipService, fileService, checksumCalculator);
+        var bagExtractor = new BagExtractorImpl(zipService, fileService, bagItManager);
         var depositHandler = new DepositHandlerImpl(configuration.getSword2(),
             bagExtractor,
             fileService,

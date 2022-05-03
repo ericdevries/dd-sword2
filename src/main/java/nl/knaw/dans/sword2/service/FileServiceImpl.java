@@ -22,7 +22,6 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Singleton;
 import javax.xml.bind.DatatypeConverter;
 import java.io.BufferedOutputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -132,8 +131,8 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public void writeContentToFile(Path path, String content) throws IOException {
-        Files.write(path, content.getBytes(StandardCharsets.UTF_8));
+    public Path writeContentToFile(Path path, String content) throws IOException {
+        return Files.write(path, content.getBytes(StandardCharsets.UTF_8));
     }
 
     @Override

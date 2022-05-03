@@ -15,9 +15,15 @@
  */
 package nl.knaw.dans.sword2.service;
 
+import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
+
+import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Map;
 
 public interface BagItManager {
 
     BagItMetaData getBagItMetaData(Path path, String depositId) throws Exception;
+
+    void updateManifests(Path path, Map<String, String> filePathMapping) throws IOException, InvalidDepositException;
 }
