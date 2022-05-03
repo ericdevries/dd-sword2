@@ -22,8 +22,6 @@ import java.util.Map;
 
 public interface ZipService {
 
-    void extractZipFile(Path zipFile, Path targetPath) throws IOException;
-
     void extractZipFileWithFileMapping(Path zipFile, Path targetPath, Map<String, String> fileMapping) throws IOException;
 
     List<String> getFilesInZip(Path zipFile) throws IOException;

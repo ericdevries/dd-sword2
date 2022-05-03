@@ -18,7 +18,6 @@ package nl.knaw.dans.sword2.service;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -33,11 +32,6 @@ public class ZipServiceImpl implements ZipService {
     @Inject
     public ZipServiceImpl(FileService fileService) {
         this.fileService = fileService;
-    }
-
-    @Override
-    public void extractZipFile(Path path, Path targetPath) throws IOException {
-        extractZipFileWithFileMapping(path, targetPath, Map.of());
     }
 
     @Override

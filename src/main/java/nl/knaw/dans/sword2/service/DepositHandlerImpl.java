@@ -356,38 +356,4 @@ public class DepositHandlerImpl implements DepositHandler {
             .resolve(id);
     }
 
-    void setDepositState(DepositProperties properties, DepositState state, String message) {
-        properties.setState(state);
-
-        switch (state) {
-            case DRAFT:
-                properties.setStateDescription("Deposit is open for additional data");
-                break;
-            case SUBMITTED:
-                properties.setStateDescription(
-                    "Deposit is valid and ready for post-submission processing");
-                break;
-            case FAILED:
-                // TODO generic error message
-                properties.setStateDescription("TODO error message");
-                break;
-            case INVALID:
-                properties.setStateDescription(message == null ? "Unknown" : message);
-                break;
-            case ARCHIVED:
-                properties.setStateDescription("Deposit is archived");
-                break;
-            case REJECTED:
-                // TODO check
-                properties.setStateDescription("Unknown");
-                break;
-            case UPLOADED:
-                // TODO if it is rescheduled due to failed diskspace requirements, the message should be different
-                properties.setStateDescription("Deposit upload has been completed");
-                break;
-            case FINALIZING:
-                properties.setStateDescription("Finalizing deposit");
-                break;
-        }
-    }
 }

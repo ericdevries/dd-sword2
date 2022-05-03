@@ -22,11 +22,5 @@ import java.security.NoSuchAlgorithmException;
 
 public interface ChecksumCalculator {
 
-    String calculateMD5Checksum(Path path) throws IOException, NoSuchAlgorithmException;
-    String calculateSHA1Checksum(Path path) throws NoSuchAlgorithmException, IOException;
-
-    String calculateMD5Checksum(MessageDigest messageDigest);
-    MessageDigest createMD5MessageDigest() throws NoSuchAlgorithmException;
-
     String calculateChecksum(Path path, String algorithm) throws NoSuchAlgorithmException, IOException;
 }
