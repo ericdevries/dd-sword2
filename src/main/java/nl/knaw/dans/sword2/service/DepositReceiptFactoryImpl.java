@@ -16,11 +16,12 @@
  */
 package nl.knaw.dans.sword2.service;
 
-import java.net.URI;
 import nl.knaw.dans.sword2.Deposit;
 import nl.knaw.dans.sword2.UriRegistry;
 import nl.knaw.dans.sword2.models.entry.Entry;
 import nl.knaw.dans.sword2.models.entry.Link;
+
+import java.net.URI;
 
 public class DepositReceiptFactoryImpl implements DepositReceiptFactory {
 
@@ -51,5 +52,10 @@ public class DepositReceiptFactoryImpl implements DepositReceiptFactory {
             deposit.getFilename(), deposit.getMd5()));
 
         return entry;
+    }
+
+    @Override
+    public URI getDepositLocation(Deposit deposit) {
+        return baseUrl.resolve("container/" + deposit.getCanonicalId());
     }
 }

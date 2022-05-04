@@ -15,9 +15,7 @@
  */
 package nl.knaw.dans.sword2.models.entry;
 
-import javax.xml.bind.annotation.XmlID;
 import javax.xml.bind.annotation.XmlType;
-import javax.xml.bind.annotation.XmlValue;
 
 @XmlType(namespace = "http://www.example.org/type")
 public class DC {

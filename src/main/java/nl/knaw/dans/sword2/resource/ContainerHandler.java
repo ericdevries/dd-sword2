@@ -21,6 +21,7 @@ import nl.knaw.dans.sword2.exceptions.DepositNotFoundException;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.HEAD;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -35,7 +36,10 @@ import java.io.InputStream;
 public interface ContainerHandler {
     @GET
     @Produces(MediaType.APPLICATION_XML)
-    Response getDepositReceipt(@PathParam("id") String depositId, @Context HttpHeaders headers, @Auth Depositor depositor) throws DepositNotFoundException;
+    Response getDepositReceipt(@PathParam("id") String depositId, @Context HttpHeaders headers, @Auth Depositor depositor);
+
+    @HEAD
+    Response getDepositReceiptHead(@PathParam("id") String depositId, @Context HttpHeaders headers, @Auth Depositor depositor);
 
     @POST
     @Consumes

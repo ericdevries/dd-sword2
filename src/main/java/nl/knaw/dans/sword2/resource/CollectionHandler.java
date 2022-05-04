@@ -15,8 +15,12 @@
  */
 package nl.knaw.dans.sword2.resource;
 
+import io.dropwizard.auth.Auth;
+import nl.knaw.dans.sword2.auth.Depositor;
+import nl.knaw.dans.sword2.models.entry.Entry;
+import nl.knaw.dans.sword2.models.statement.Feed;
+import org.glassfish.jersey.media.multipart.MultiPart;
 
-import java.io.InputStream;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -27,19 +31,14 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-
-import io.dropwizard.auth.Auth;
-import nl.knaw.dans.sword2.auth.Depositor;
-import nl.knaw.dans.sword2.models.entry.Entry;
-import org.glassfish.jersey.media.multipart.FormDataParam;
-import org.glassfish.jersey.media.multipart.MultiPart;
+import java.io.InputStream;
 
 @Path("/collection/{id}")
 public interface CollectionHandler {
 
     @GET
     @Produces(MediaType.APPLICATION_XML)
-    Entry getDeposit(@Context HttpHeaders headers);
+    Feed getCollection(@Context HttpHeaders headers, @Auth Depositor depositor);
 
 
     @POST

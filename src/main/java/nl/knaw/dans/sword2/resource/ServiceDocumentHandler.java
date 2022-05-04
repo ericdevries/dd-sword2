@@ -15,6 +15,9 @@
  */
 package nl.knaw.dans.sword2.resource;
 
+import io.dropwizard.auth.Auth;
+import nl.knaw.dans.sword2.auth.Depositor;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
@@ -25,5 +28,5 @@ import javax.ws.rs.core.Response;
 public interface ServiceDocumentHandler {
 
     @GET
-    Response getServiceDocument(@Context HttpHeaders httpHeaders);
+    Response getServiceDocument(@Context HttpHeaders httpHeaders, @Auth Depositor depositor);
 }

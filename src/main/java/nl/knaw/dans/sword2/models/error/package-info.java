@@ -13,16 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.sword2.service;
 
-import nl.knaw.dans.sword2.Deposit;
-import nl.knaw.dans.sword2.models.entry.Entry;
+@XmlSchema(namespace = "http://www.w3.org/2005/Atom",
+        elementFormDefault = XmlNsForm.QUALIFIED,
+        xmlns = {@XmlNs(prefix = "",
+                namespaceURI = "http://www.w3.org/2005/Atom"), @XmlNs(prefix = "sword",
+                namespaceURI = "http://purl.org/net/sword/terms/")})
+package nl.knaw.dans.sword2.models.error;
 
-import java.net.URI;
-
-public interface DepositReceiptFactory {
-
-    Entry createDepositReceipt(Deposit deposit);
-
-    URI getDepositLocation(Deposit deposit);
-}
+import javax.xml.bind.annotation.XmlNs;
+import javax.xml.bind.annotation.XmlNsForm;
+import javax.xml.bind.annotation.XmlSchema;

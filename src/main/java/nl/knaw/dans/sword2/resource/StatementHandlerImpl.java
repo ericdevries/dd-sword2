@@ -15,34 +15,33 @@
  */
 package nl.knaw.dans.sword2.resource;
 
-import io.swagger.annotations.ExampleProperty;
 import nl.knaw.dans.sword2.auth.Depositor;
 import nl.knaw.dans.sword2.exceptions.DepositNotFoundException;
 import nl.knaw.dans.sword2.models.entry.Link;
 import nl.knaw.dans.sword2.models.statement.Feed;
 import nl.knaw.dans.sword2.models.statement.FeedAuthor;
 import nl.knaw.dans.sword2.models.statement.FeedCategory;
-import nl.knaw.dans.sword2.models.statement.FeedContent;
-import nl.knaw.dans.sword2.models.statement.FeedEntry;
 import nl.knaw.dans.sword2.models.statement.TextElement;
 import nl.knaw.dans.sword2.service.DepositHandler;
+import nl.knaw.dans.sword2.service.ErrorResponseFactory;
 
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.net.URI;
 
-public class StatementHandlerImpl implements StatementHandler {
+public class StatementHandlerImpl extends BaseHandler implements StatementHandler {
     private final URI baseUrl;
     private final DepositHandler depositHandler;
 
-    public StatementHandlerImpl(URI baseUrl, DepositHandler depositHandler) {
+    public StatementHandlerImpl(URI baseUrl, DepositHandler depositHandler, ErrorResponseFactory errorResponseFactory) {
+        super(errorResponseFactory);
         this.baseUrl = baseUrl;
         this.depositHandler = depositHandler;
     }
 
     @Override
     public Response getStatement(String depositId, HttpHeaders headers, Depositor depositor) {
-
         try {
             var deposit = depositHandler.getDeposit(depositId, depositor);
             var url = baseUrl.resolve("/statement/" + depositId).toString();
@@ -61,37 +60,7 @@ public class StatementHandlerImpl implements StatementHandler {
                 .build();
         }
         catch (DepositNotFoundException e) {
-            e.printStackTrace();
+            throw new WebApplicationException(404);
         }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return Response.status(Response.Status.NOT_FOUND).build();
-
-//        var url = baseUrl.resolve("/statement/" + depositId).toString();
-//        var feed = new Feed();
-////
-//        feed.setId(url);
-//        feed.setTitle(new TextElement(String.format("Deposit %s", depositId), "text"));
-//        feed.addLink(new Link(URI.create(url), "self", null));
-//        feed.setCategory(new FeedCategory("State", "http://purl.org/net/sword/terms/state", "SUBMITTED", "Deposit is valid and ready for post-submission processing"));
-//        feed.getAuthors().add(new FeedAuthor("DANS-EASY"));
-//
-//        feed.addEntry(new FeedEntry("urn:uuid:bb19f1b1-0833-4733-bd6e-e32cec1eb978",
-//            new TextElement("Resource urn:uuid:bb19f1b1-0833-4733-bd6e-e32cec1eb978", "text"),
-//            new TextElement("Resource Part", "text"),
-//            new FeedContent("urn:uuid:bb19f1b1-0833-4733-bd6e-e32cec1eb978", "multipart/related")
-//        ));
-//
-//        feed.addEntry(new FeedEntry("urn:uuid:bb19f1b1-0833-4733-bd6e-e32cec1eb977",
-//            new TextElement("Resource urn:uuid:bb19f1b1-0833-4733-bd6e-e32cec1eb977", "text"),
-//            new TextElement("Resource Part", "text"),
-//            new FeedContent("urn:uuid:bb19f1b1-0833-4733-bd6e-e32cec1eb977", "multipart/related")
-//        ));
-//
-//        return Response.status(Response.Status.OK)
-//            .entity(feed)
-//            .build();
     }
 }

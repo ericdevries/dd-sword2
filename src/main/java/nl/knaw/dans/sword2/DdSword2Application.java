@@ -23,7 +23,6 @@ import io.dropwizard.auth.basic.BasicCredentialAuthFilter;
 import io.dropwizard.forms.MultiPartBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
-import java.util.concurrent.ArrayBlockingQueue;
 import nl.knaw.dans.sword2.auth.Depositor;
 import nl.knaw.dans.sword2.auth.SwordAuthenticator;
 import nl.knaw.dans.sword2.resource.CollectionHandlerImpl;
@@ -37,12 +36,15 @@ import nl.knaw.dans.sword2.service.CollectionManagerImpl;
 import nl.knaw.dans.sword2.service.DepositHandlerImpl;
 import nl.knaw.dans.sword2.service.DepositPropertiesManagerImpl;
 import nl.knaw.dans.sword2.service.DepositReceiptFactoryImpl;
+import nl.knaw.dans.sword2.service.ErrorResponseFactoryImpl;
 import nl.knaw.dans.sword2.service.FileServiceImpl;
 import nl.knaw.dans.sword2.service.UserManagerImpl;
 import nl.knaw.dans.sword2.service.ZipServiceImpl;
 import nl.knaw.dans.sword2.service.finalizer.DepositFinalizerEvent;
 import nl.knaw.dans.sword2.service.finalizer.DepositFinalizerManager;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
+
+import java.util.concurrent.ArrayBlockingQueue;
 
 public class DdSword2Application extends Application<DdSword2Configuration> {
 
@@ -63,76 +65,49 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
     }
 
     @Override
-    public void run(final DdSword2Configuration configuration, final Environment environment)
-        throws Exception {
+    public void run(final DdSword2Configuration configuration, final Environment environment) throws Exception {
         var fileService = new FileServiceImpl();
         var depositPropertiesManager = new DepositPropertiesManagerImpl();
         var checksumCalculator = new ChecksumCalculatorImpl();
 
+        var errorResponseFactory = new ErrorResponseFactoryImpl();
+
         var bagItManager = new BagItManagerImpl(fileService, checksumCalculator);
         var userManager = new UserManagerImpl(configuration.getUsers());
 
-        var executorService = configuration.getSword2()
-            .getFinalizingQueue()
-            .build(environment);
+        var executorService = configuration.getSword2().getFinalizingQueue().build(environment);
 
-        var queue = new ArrayBlockingQueue<DepositFinalizerEvent>(configuration.getSword2()
-            .getFinalizingQueue()
-            .getMaxQueueSize());
+        var queue = new ArrayBlockingQueue<DepositFinalizerEvent>(configuration.getSword2().getFinalizingQueue().getMaxQueueSize());
 
-        var collectionManager = new CollectionManagerImpl(configuration.getSword2()
-            .getCollections());
+        var collectionManager = new CollectionManagerImpl(configuration.getSword2().getCollections());
 
         var zipService = new ZipServiceImpl(fileService);
 
         var bagExtractor = new BagExtractorImpl(zipService, fileService, bagItManager);
-        var depositHandler = new DepositHandlerImpl(configuration.getSword2(),
-            bagExtractor,
-            fileService,
-            depositPropertiesManager, collectionManager, userManager, queue, bagItManager);
+        var depositHandler = new DepositHandlerImpl(configuration.getSword2(), bagExtractor, fileService, depositPropertiesManager, collectionManager, userManager, queue, bagItManager);
 
-        var depositReceiptFactory = new DepositReceiptFactoryImpl(configuration.getSword2()
-            .getBaseUrl());
+        var depositReceiptFactory = new DepositReceiptFactoryImpl(configuration.getSword2().getBaseUrl());
 
-        var depositFinalizerManager = new DepositFinalizerManager(executorService,
-            depositHandler,
-            queue);
+        var depositFinalizerManager = new DepositFinalizerManager(executorService, depositHandler, queue);
 
-        environment.jersey()
-            .register(MultiPartFeature.class);
+        environment.jersey().register(MultiPartFeature.class);
         // Set up authentication
-        environment.jersey()
-            .register(new AuthDynamicFeature(
-                new BasicCredentialAuthFilter.Builder<Depositor>()
-                    .setAuthenticator(new SwordAuthenticator(configuration.getUsers()))
-                    .setRealm("SWORD2")
-                    .buildAuthFilter()));
+        environment.jersey().register(
+            new AuthDynamicFeature(new BasicCredentialAuthFilter.Builder<Depositor>().setAuthenticator(new SwordAuthenticator(configuration.getUsers())).setRealm("SWORD2").buildAuthFilter()));
 
         // For @Auth
-        environment.jersey()
-            .register(new AuthValueFactoryProvider.Binder<>(Depositor.class));
+        environment.jersey().register(new AuthValueFactoryProvider.Binder<>(Depositor.class));
 
         // Managed classes
-        environment.lifecycle()
-            .manage(depositFinalizerManager);
+        environment.lifecycle().manage(depositFinalizerManager);
 
         // Resources
-        environment.jersey()
-            .register(new CollectionHandlerImpl(depositHandler, depositReceiptFactory
-            ));
+        environment.jersey().register(new CollectionHandlerImpl(depositHandler, depositReceiptFactory, errorResponseFactory));
 
-        environment.jersey()
-            .register(new ContainerHandlerImpl(depositReceiptFactory, depositHandler));
+        environment.jersey().register(new ContainerHandlerImpl(depositReceiptFactory, depositHandler, errorResponseFactory));
 
-        environment.jersey()
-            .register(new StatementHandlerImpl(configuration.getSword2()
-                .getBaseUrl(), depositHandler));
+        environment.jersey().register(new StatementHandlerImpl(configuration.getSword2().getBaseUrl(), depositHandler, errorResponseFactory));
 
-        environment.jersey()
-            .register(new ServiceDocumentHandlerImpl(configuration.getUsers(),
-                configuration.getSword2()
-                    .getCollections(),
-                configuration.getSword2()
-                    .getBaseUrl()));
+        environment.jersey().register(new ServiceDocumentHandlerImpl(configuration.getSword2().getCollections(), configuration.getSword2().getBaseUrl()));
     }
 }

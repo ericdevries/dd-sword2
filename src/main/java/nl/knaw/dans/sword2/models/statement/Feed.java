@@ -16,6 +16,7 @@
 package nl.knaw.dans.sword2.models.statement;
 
 import nl.knaw.dans.sword2.models.entry.Link;
+import nl.knaw.dans.sword2.models.error.Generator;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -30,6 +31,8 @@ public class Feed {
 
     @XmlElement
     private String id;
+    @XmlElement(namespace = "http://www.w3.org/2005/Atom")
+    private Generator generator;
     @XmlElement(name = "link")
     private List<Link> links = new ArrayList<>();
     @XmlElement
@@ -42,6 +45,14 @@ public class Feed {
     private List<FeedEntry> entries = new ArrayList<>();
     @XmlElement
     private FeedCategory category;
+
+    public Generator getGenerator() {
+        return generator;
+    }
+
+    public void setGenerator(Generator generator) {
+        this.generator = generator;
+    }
 
     public String getUpdated() {
         return updated;

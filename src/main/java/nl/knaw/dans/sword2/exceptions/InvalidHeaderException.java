@@ -13,16 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.sword2.service;
+package nl.knaw.dans.sword2.exceptions;
 
-import nl.knaw.dans.sword2.Deposit;
-import nl.knaw.dans.sword2.models.entry.Entry;
-
-import java.net.URI;
-
-public interface DepositReceiptFactory {
-
-    Entry createDepositReceipt(Deposit deposit);
-
-    URI getDepositLocation(Deposit deposit);
+public class InvalidHeaderException extends Throwable {
+    public InvalidHeaderException(String msg) {
+        super(msg);
+    }
 }
