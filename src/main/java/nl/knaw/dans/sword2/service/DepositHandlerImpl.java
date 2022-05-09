@@ -17,7 +17,6 @@ package nl.knaw.dans.sword2.service;
 
 import nl.knaw.dans.sword2.Deposit;
 import nl.knaw.dans.sword2.DepositState;
-import nl.knaw.dans.sword2.UriRegistry;
 import nl.knaw.dans.sword2.auth.Depositor;
 import nl.knaw.dans.sword2.config.CollectionConfig;
 import nl.knaw.dans.sword2.config.Sword2Config;
@@ -141,36 +140,6 @@ public class DepositHandlerImpl implements DepositHandler {
     }
 
     @Override
-    public DepositProperties createDeposit(Deposit deposit, Path payload) throws IOException {
-        /*
-        var collection = getCollection(deposit);
-        var id = deposit.getCanonicalId();
-        var path = getUploadPath(collection, id);
-
-        fileService.ensureDirectoriesExist(path);
-
-        var props = depositPropertiesManager.getProperties(path, deposit);
-
-        props.setBagStoreBagId(id);
-        props.setDataverseBagId(String.format("urn:uuid:%s", id));
-        props.setContentType(deposit.getMimeType());
-        props.setCreationTimestamp(OffsetDateTime.now()
-            .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-        props.setDepositOrigin("SWORD2");
-
-        setDepositState(props, DepositState.DRAFT, null);
-
-        depositPropertiesManager.saveProperties(path, deposit, props);
-
-        startFinalizingDeposit(deposit);
-
-        return props;
-
-         */
-        return null;
-    }
-
-    @Override
     public Deposit getDeposit(String depositId, Depositor depositor) throws DepositNotFoundException {
         var deposit = getDeposit(depositId);
 
@@ -190,7 +159,6 @@ public class DepositHandlerImpl implements DepositHandler {
             var searchPaths = List.of(collection.getUploads().resolve(depositId), collection.getDeposits().resolve(depositId));
 
             for (var path : searchPaths) {
-                System.out.println("PATH: " + path);
                 if (fileService.exists(path)) {
                     var deposit = depositPropertiesManager.getProperties(path);
                     deposit.setPath(path);
@@ -257,17 +225,11 @@ public class DepositHandlerImpl implements DepositHandler {
 
         removeZipFiles(path);
 
-        updateManifests(path);
-
         var collection = collectionManager.getCollectionByName(deposit.getCollectionId());
         var targetPath = getDepositPath(collection, depositId);
         fileService.move(path, targetPath);
 
         return deposit;
-    }
-
-    private void updateManifests(Path path) {
-
     }
 
     private Stream<Path> getDepositFiles(Path path) throws IOException {

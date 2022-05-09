@@ -34,8 +34,6 @@ import java.security.NoSuchAlgorithmException;
 
 public interface DepositHandler {
 
-    DepositProperties createDeposit(Deposit deposit, Path payload) throws IOException;
-
     Deposit getDeposit(String depositId, Depositor depositor) throws DepositNotFoundException;
 
     Deposit getDeposit(String depositId) throws DepositNotFoundException;
