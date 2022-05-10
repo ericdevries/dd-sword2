@@ -25,11 +25,11 @@ import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import nl.knaw.dans.sword2.auth.Depositor;
 import nl.knaw.dans.sword2.auth.SwordAuthenticator;
-import nl.knaw.dans.sword2.resource.CollectionHandlerImpl;
-import nl.knaw.dans.sword2.resource.ContainerHandlerImpl;
+import nl.knaw.dans.sword2.resource.CollectionResourceImpl;
+import nl.knaw.dans.sword2.resource.ContainerResourceImpl;
 import nl.knaw.dans.sword2.resource.HashHeaderInterceptor;
-import nl.knaw.dans.sword2.resource.ServiceDocumentHandlerImpl;
-import nl.knaw.dans.sword2.resource.StatementHandlerImpl;
+import nl.knaw.dans.sword2.resource.ServiceDocumentResourceImpl;
+import nl.knaw.dans.sword2.resource.StatementResourceImpl;
 import nl.knaw.dans.sword2.service.BagExtractorImpl;
 import nl.knaw.dans.sword2.service.BagItManagerImpl;
 import nl.knaw.dans.sword2.service.ChecksumCalculatorImpl;
@@ -76,7 +76,8 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
         var bagItManager = new BagItManagerImpl(fileService, checksumCalculator);
         var userManager = new UserManagerImpl(configuration.getUsers());
 
-        var executorService = configuration.getSword2().getFinalizingQueue().build(environment);
+        var finalizingExecutor = configuration.getSword2().getFinalizingQueue().build(environment);
+        var rescheduleExecutor = configuration.getSword2().getRescheduleQueue().build(environment);
 
         var queue = new ArrayBlockingQueue<DepositFinalizerEvent>(configuration.getSword2().getFinalizingQueue().getMaxQueueSize());
 
@@ -89,7 +90,7 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
 
         var depositReceiptFactory = new DepositReceiptFactoryImpl(configuration.getSword2().getBaseUrl());
 
-        var depositFinalizerManager = new DepositFinalizerManager(executorService, depositHandler, queue);
+        var depositFinalizerManager = new DepositFinalizerManager(finalizingExecutor, depositHandler, queue, rescheduleExecutor, configuration.getSword2().getRescheduleDelay());
 
         environment.jersey().register(MultiPartFeature.class);
         // Set up authentication
@@ -105,12 +106,12 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
         environment.jersey().register(HashHeaderInterceptor.class);
 
         // Resources
-        environment.jersey().register(new CollectionHandlerImpl(depositHandler, depositReceiptFactory, errorResponseFactory));
+        environment.jersey().register(new CollectionResourceImpl(depositHandler, depositReceiptFactory, errorResponseFactory));
 
-        environment.jersey().register(new ContainerHandlerImpl(depositReceiptFactory, depositHandler, errorResponseFactory));
+        environment.jersey().register(new ContainerResourceImpl(depositReceiptFactory, depositHandler, errorResponseFactory));
 
-        environment.jersey().register(new StatementHandlerImpl(configuration.getSword2().getBaseUrl(), depositHandler, errorResponseFactory));
+        environment.jersey().register(new StatementResourceImpl(configuration.getSword2().getBaseUrl(), depositHandler, errorResponseFactory));
 
-        environment.jersey().register(new ServiceDocumentHandlerImpl(configuration.getSword2().getCollections(), configuration.getSword2().getBaseUrl()));
+        environment.jersey().register(new ServiceDocumentResourceImpl(configuration.getSword2().getCollections(), configuration.getSword2().getBaseUrl()));
     }
 }

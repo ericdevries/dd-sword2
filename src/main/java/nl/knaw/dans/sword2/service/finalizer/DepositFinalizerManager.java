@@ -16,38 +16,54 @@
 package nl.knaw.dans.sword2.service.finalizer;
 
 import io.dropwizard.lifecycle.Managed;
+import nl.knaw.dans.sword2.service.DepositHandler;
+import nl.knaw.dans.sword2.service.DepositHandlerImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
-import nl.knaw.dans.sword2.service.DepositHandler;
 
-
-// TODO make a separate executor service for managing retries, so we can call shutdownNow to exit faster
 public class DepositFinalizerManager implements Managed {
+    private static final Logger log = LoggerFactory.getLogger(DepositFinalizerManager.class);
 
+    private final DepositHandler depositHandler;
     private final Thread depositFinalizerListenerThread;
     private final BlockingQueue<DepositFinalizerEvent> taskQueue;
     private final ExecutorService finalizerQueue;
+    private final ExecutorService rescheduleQueue;
+    private final Duration rescheduleDelay;
 
-    public DepositFinalizerManager(ExecutorService finalizerQueue,
-        DepositHandler depositHandler,
-        BlockingQueue<DepositFinalizerEvent> taskQueue
-    ) {
-        this.depositFinalizerListenerThread = new Thread(new DepositFinalizerListener(taskQueue,
-            finalizerQueue,
-            depositHandler));
+    public DepositFinalizerManager(ExecutorService finalizerQueue, DepositHandler depositHandler,
+        BlockingQueue<DepositFinalizerEvent> taskQueue, ExecutorService rescheduleQueue,
+        Duration rescheduleDelay) {
+        this.depositHandler = depositHandler;
+        this.rescheduleDelay = rescheduleDelay;
+        this.depositFinalizerListenerThread = new Thread(new DepositFinalizerListener(taskQueue, finalizerQueue, depositHandler, rescheduleQueue, rescheduleDelay));
         this.taskQueue = taskQueue;
         this.finalizerQueue = finalizerQueue;
+        this.rescheduleQueue = rescheduleQueue;
     }
-
 
     @Override
     public void start() throws Exception {
         this.depositFinalizerListenerThread.start();
+
+        // scan all items in the uploads folder and add them to the queue
+        var deposits = this.depositHandler.getOpenDeposits();
+        log.info("Found {} deposits that need to be checked", deposits.size());
+
+        for (var deposit: deposits) {
+            log.info("Adding finalizing event for deposit {} to the queue", deposit.getId());
+            this.taskQueue.put(new DepositFinalizerEvent(deposit.getId()));
+        }
     }
 
     @Override
     public void stop() throws Exception {
         this.taskQueue.put(new DepositFinalizerStopEvent());
         this.finalizerQueue.shutdown();
+        this.rescheduleQueue.shutdownNow();
     }
 }

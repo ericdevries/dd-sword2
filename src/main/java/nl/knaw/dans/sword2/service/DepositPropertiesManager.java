@@ -16,12 +16,13 @@
 package nl.knaw.dans.sword2.service;
 
 import nl.knaw.dans.sword2.Deposit;
+import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
 
 import java.nio.file.Path;
 
 public interface DepositPropertiesManager {
 
-    Deposit getProperties(Path path);
+    Deposit getProperties(Path path) throws InvalidDepositException;
 
-    void saveProperties(Path path, Deposit deposit);
+    void saveProperties(Path path, Deposit deposit) throws InvalidDepositException;
 }

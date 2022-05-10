@@ -23,7 +23,7 @@ import java.util.Map;
 
 public interface BagItManager {
 
-    BagItMetaData getBagItMetaData(Path path, String depositId) throws Exception;
+    BagItMetaData getBagItMetaData(Path path, String depositId) throws InvalidDepositException;
 
     void updateManifests(Path path, Map<String, String> filePathMapping) throws IOException, InvalidDepositException;
 }

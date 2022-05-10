@@ -13,11 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.sword2.service.finalizer;
+package nl.knaw.dans.sword2.resource;
 
-public class DepositFinalizerRetryEvent extends DepositFinalizerEvent {
+import io.dropwizard.auth.Auth;
+import nl.knaw.dans.sword2.auth.Depositor;
 
-    public DepositFinalizerRetryEvent(String depositId) {
-        super(depositId, DepositFinalizerEventType.RETRY);
-    }
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+
+@Path("/servicedocument")
+public interface ServiceDocumentResource {
+
+    @GET
+    @Produces(MediaType.APPLICATION_ATOM_XML)
+    Response getServiceDocument(@Context HttpHeaders httpHeaders, @Auth Depositor depositor);
 }

@@ -16,14 +16,15 @@
 package nl.knaw.dans.sword2.config;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import java.net.URI;
-import java.time.Duration;
-import java.util.List;
+import nl.knaw.dans.lib.util.ExecutorServiceFactory;
+import nl.knaw.dans.sword2.config.converter.StringByteSizeConverter;
+
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
-import nl.knaw.dans.lib.util.ExecutorServiceFactory;
-import nl.knaw.dans.sword2.config.converter.StringByteSizeConverter;
+import java.net.URI;
+import java.time.Duration;
+import java.util.List;
 
 public class Sword2Config {
 
@@ -42,6 +43,17 @@ public class Sword2Config {
     @Valid
     @NotNull
     private ExecutorServiceFactory finalizingQueue;
+    @Valid
+    @NotNull
+    private ExecutorServiceFactory rescheduleQueue;
+
+    public ExecutorServiceFactory getRescheduleQueue() {
+        return rescheduleQueue;
+    }
+
+    public void setRescheduleQueue(ExecutorServiceFactory rescheduleQueue) {
+        this.rescheduleQueue = rescheduleQueue;
+    }
 
     public URI getBaseUrl() {
         return baseUrl;

@@ -28,7 +28,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 @Path("/statement/{id}")
-public interface StatementHandler {
+public interface StatementResource {
     @GET
     @Produces(MediaType.APPLICATION_XML)
     Response getStatement(@PathParam("id") String depositId, @Context HttpHeaders headers, @Auth Depositor depositor);

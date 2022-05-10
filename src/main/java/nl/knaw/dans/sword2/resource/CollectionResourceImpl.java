@@ -19,16 +19,15 @@ import nl.knaw.dans.sword2.UriRegistry;
 import nl.knaw.dans.sword2.auth.Depositor;
 import nl.knaw.dans.sword2.exceptions.CollectionNotFoundException;
 import nl.knaw.dans.sword2.exceptions.HashMismatchException;
+import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
 import nl.knaw.dans.sword2.exceptions.InvalidHeaderException;
 import nl.knaw.dans.sword2.exceptions.NotEnoughDiskSpaceException;
-import nl.knaw.dans.sword2.models.entry.Entry;
 import nl.knaw.dans.sword2.models.error.Generator;
 import nl.knaw.dans.sword2.models.statement.Feed;
 import nl.knaw.dans.sword2.models.statement.FeedEntry;
 import nl.knaw.dans.sword2.service.DepositHandler;
 import nl.knaw.dans.sword2.service.DepositReceiptFactory;
 import nl.knaw.dans.sword2.service.ErrorResponseFactory;
-import org.apache.commons.fileupload.ParameterParser;
 import org.glassfish.jersey.media.multipart.MultiPart;
 
 import javax.ws.rs.WebApplicationException;
@@ -38,16 +37,14 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-public class CollectionHandlerImpl extends BaseHandler implements CollectionHandler {
+public class CollectionResourceImpl extends BaseHandler implements CollectionResource {
 
     private final DepositHandler depositHandler;
     private final DepositReceiptFactory depositReceiptFactory;
 
-    public CollectionHandlerImpl(DepositHandler depositHandler, DepositReceiptFactory depositReceiptFactory, ErrorResponseFactory errorResponseFactory) {
+    public CollectionResourceImpl(DepositHandler depositHandler, DepositReceiptFactory depositReceiptFactory, ErrorResponseFactory errorResponseFactory) {
         super(errorResponseFactory);
         this.depositHandler = depositHandler;
         this.depositReceiptFactory = depositReceiptFactory;
@@ -111,7 +108,7 @@ public class CollectionHandlerImpl extends BaseHandler implements CollectionHand
                     .entity(entry).build();
             }
         }
-        catch (IOException | InvalidHeaderException e) {
+        catch (IOException | InvalidHeaderException | InvalidDepositException e) {
             return buildSwordErrorResponse(UriRegistry.ERROR_BAD_REQUEST, e.getMessage());
         }
         catch (CollectionNotFoundException e) {
@@ -157,7 +154,7 @@ public class CollectionHandlerImpl extends BaseHandler implements CollectionHand
                 .build();
 
         }
-        catch (IOException | InvalidHeaderException e) {
+        catch (IOException | InvalidHeaderException | InvalidDepositException e) {
             return buildSwordErrorResponse(UriRegistry.ERROR_BAD_REQUEST, e.getMessage());
         }
         catch (CollectionNotFoundException e) {

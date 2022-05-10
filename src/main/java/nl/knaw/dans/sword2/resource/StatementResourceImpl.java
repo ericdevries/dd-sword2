@@ -17,6 +17,7 @@ package nl.knaw.dans.sword2.resource;
 
 import nl.knaw.dans.sword2.auth.Depositor;
 import nl.knaw.dans.sword2.exceptions.DepositNotFoundException;
+import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
 import nl.knaw.dans.sword2.models.entry.Link;
 import nl.knaw.dans.sword2.models.statement.Feed;
 import nl.knaw.dans.sword2.models.statement.FeedAuthor;
@@ -30,11 +31,11 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.net.URI;
 
-public class StatementHandlerImpl extends BaseHandler implements StatementHandler {
+public class StatementResourceImpl extends BaseHandler implements StatementResource {
     private final URI baseUrl;
     private final DepositHandler depositHandler;
 
-    public StatementHandlerImpl(URI baseUrl, DepositHandler depositHandler, ErrorResponseFactory errorResponseFactory) {
+    public StatementResourceImpl(URI baseUrl, DepositHandler depositHandler, ErrorResponseFactory errorResponseFactory) {
         super(errorResponseFactory);
         this.baseUrl = baseUrl;
         this.depositHandler = depositHandler;
@@ -61,6 +62,9 @@ public class StatementHandlerImpl extends BaseHandler implements StatementHandle
         }
         catch (DepositNotFoundException e) {
             throw new WebApplicationException(404);
+        }
+        catch (InvalidDepositException e) {
+            throw new WebApplicationException(400);
         }
     }
 }

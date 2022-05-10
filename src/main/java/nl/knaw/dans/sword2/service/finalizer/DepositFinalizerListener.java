@@ -16,24 +16,30 @@
  */
 package nl.knaw.dans.sword2.service.finalizer;
 
+import nl.knaw.dans.sword2.service.DepositHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 
-import nl.knaw.dans.sword2.service.DepositHandler;
-
 public class DepositFinalizerListener implements Runnable {
+    private static final Logger log = LoggerFactory.getLogger(DepositFinalizerListener.class);
 
     private final BlockingQueue<DepositFinalizerEvent> taskQueue;
     private final ExecutorService finalizerQueue;
+    private final ExecutorService rescheduleQueue;
     private final DepositHandler depositHandler;
+    private final Duration rescheduleDelay;
 
-    public DepositFinalizerListener(BlockingQueue<DepositFinalizerEvent> taskQueue,
-        ExecutorService finalizerQueue,
-        DepositHandler depositHandler
-    ) {
+    public DepositFinalizerListener(BlockingQueue<DepositFinalizerEvent> taskQueue, ExecutorService finalizerQueue, DepositHandler depositHandler, ExecutorService rescheduleQueue,
+        Duration rescheduleDelay) {
         this.taskQueue = taskQueue;
         this.finalizerQueue = finalizerQueue;
         this.depositHandler = depositHandler;
+        this.rescheduleQueue = rescheduleQueue;
+        this.rescheduleDelay = rescheduleDelay;
     }
 
     @Override
@@ -43,34 +49,27 @@ public class DepositFinalizerListener implements Runnable {
             try {
                 var depositTask = taskQueue.take();
 
-                Runnable task = null;
+                log.info("Received task from queue: {}", depositTask);
 
                 switch (depositTask.getEventType()) {
                     case STOP:
                         return;
 
                     case FINALIZE:
-                        task = new DepositFinalizer(depositTask.getDepositId(),
-                            depositHandler,
-                            taskQueue);
+                        finalizerQueue.submit(new DepositFinalizer(depositTask.getDepositId(), depositHandler, taskQueue));
                         break;
 
-                    case RETRY:
-                        task = new DepositFinalizerDelayedTask(depositTask.getDepositId(),
-                            30,
-                            taskQueue);
+                    case RESCHEDULE:
+                        rescheduleQueue.submit(new DepositFinalizerDelayedTask(depositTask.getDepositId(), rescheduleDelay, taskQueue));
                         break;
 
                 }
 
-                if (task != null) {
-                    finalizerQueue.submit(task);
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            }
+            catch (InterruptedException e) {
+                log.error("Unable to run task because the thread was interrupted", e);
                 break;
             }
         }
-
     }
 }

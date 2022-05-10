@@ -16,30 +16,35 @@
  */
 package nl.knaw.dans.sword2.service.finalizer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
 
 class DepositFinalizerDelayedTask implements Runnable {
+    private static final Logger log = LoggerFactory.getLogger(DepositFinalizerDelayedTask.class);
 
     private final String id;
-    private final long delaySeconds;
+    private final Duration delay;
     private final BlockingQueue<DepositFinalizerEvent> taskQueue;
 
     public DepositFinalizerDelayedTask(String id,
-        long delaySeconds,
+        Duration delay,
         BlockingQueue<DepositFinalizerEvent> taskQueue
     ) {
         this.id = id;
-        this.delaySeconds = delaySeconds;
+        this.delay = delay;
         this.taskQueue = taskQueue;
     }
 
     @Override
     public void run() {
         try {
-            Thread.sleep(delaySeconds * 1000);
+            Thread.sleep(delay.toMillis());
             taskQueue.put(new DepositFinalizerEvent(id));
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            log.error("Unable to reschedule task because the thread was interrupted", e);
         }
     }
 }

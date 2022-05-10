@@ -20,6 +20,7 @@ import io.dropwizard.testing.junit5.ResourceExtension;
 import nl.knaw.dans.sword2.Deposit;
 import nl.knaw.dans.sword2.DepositState;
 import nl.knaw.dans.sword2.exceptions.DepositNotFoundException;
+import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
 import nl.knaw.dans.sword2.models.statement.Feed;
 import nl.knaw.dans.sword2.service.DepositHandler;
 import nl.knaw.dans.sword2.service.ErrorResponseFactory;
@@ -38,17 +39,17 @@ import java.time.ZoneOffset;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(DropwizardExtensionsSupport.class)
-class StatementHandlerImplTest {
+class StatementResourceImplTest {
     private static final DepositHandler depositHandler = Mockito.mock(DepositHandler.class);
     private static final ErrorResponseFactory errorResponseFactory = Mockito.mock(ErrorResponseFactory.class);
     private static final ResourceExtension EXT = ResourceExtension.builder()
         .bootstrapLogging(true)
-        .addResource(new StatementHandlerImpl(URI.create("http://localhost:8080"), depositHandler, errorResponseFactory))
+        .addResource(new StatementResourceImpl(URI.create("http://localhost:8080"), depositHandler, errorResponseFactory))
         .addResource(HashHeaderInterceptor::new)
         .build();
 
     @Test
-    void testStatement() throws JAXBException, DepositNotFoundException {
+    void testStatement() throws DepositNotFoundException, InvalidDepositException {
         var deposit = new Deposit();
         deposit.setId("a03ca6f1-608b-4247-8c22-99681b8494a0");
         deposit.setCreated(OffsetDateTime.of(2022, 5, 1, 1, 2, 3, 4, ZoneOffset.UTC));

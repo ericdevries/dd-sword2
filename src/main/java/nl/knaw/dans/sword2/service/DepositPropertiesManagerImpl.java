@@ -18,6 +18,7 @@ package nl.knaw.dans.sword2.service;
 import nl.knaw.dans.sword2.Deposit;
 import nl.knaw.dans.sword2.DepositState;
 import nl.knaw.dans.sword2.config.Sword2Config;
+import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.FileBasedConfiguration;
 import org.apache.commons.configuration2.PropertiesConfiguration;
@@ -41,7 +42,7 @@ public class DepositPropertiesManagerImpl implements DepositPropertiesManager {
     }
 
     @Override
-    public void saveProperties(Path path, Deposit deposit) {
+    public void saveProperties(Path path, Deposit deposit) throws InvalidDepositException {
         var propertiesFile = getDepositPath(path);
 
         var params = new Parameters();
@@ -57,14 +58,12 @@ public class DepositPropertiesManagerImpl implements DepositPropertiesManager {
             builder.save();
         }
         catch (ConfigurationException cex) {
-            // loading of the configuration file failed
-            cex.printStackTrace();
+            throw new InvalidDepositException("Unable to save deposit properties", cex);
         }
     }
 
     @Override
-    public Deposit getProperties(Path path) {
-
+    public Deposit getProperties(Path path) throws InvalidDepositException {
         var propertiesFile = getDepositPath(path);
         var params = new Parameters();
         var paramConfig = params.properties()
@@ -78,11 +77,8 @@ public class DepositPropertiesManagerImpl implements DepositPropertiesManager {
             return mapToDeposit(config);
         }
         catch (ConfigurationException cex) {
-            // loading of the configuration file failed
-            cex.printStackTrace();
+            throw new InvalidDepositException("Unable to load deposit properties", cex);
         }
-
-        return null;
     }
 
     Deposit mapToDeposit(Configuration config) {

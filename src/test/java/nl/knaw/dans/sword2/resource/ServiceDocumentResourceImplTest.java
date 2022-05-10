@@ -35,7 +35,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(DropwizardExtensionsSupport.class)
-class ServiceDocumentHandlerImplTest {
+class ServiceDocumentResourceImplTest {
 
     private static DropwizardAppExtension<DdSword2Configuration> EXT = new DropwizardAppExtension<>(
         DdSword2Application.class,

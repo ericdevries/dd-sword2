@@ -21,6 +21,7 @@ import nl.knaw.dans.sword2.exceptions.CollectionNotFoundException;
 import nl.knaw.dans.sword2.exceptions.DepositNotFoundException;
 import nl.knaw.dans.sword2.exceptions.DepositReadOnlyException;
 import nl.knaw.dans.sword2.exceptions.HashMismatchException;
+import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
 import nl.knaw.dans.sword2.exceptions.InvalidHeaderException;
 import nl.knaw.dans.sword2.exceptions.NotEnoughDiskSpaceException;
 import nl.knaw.dans.sword2.service.DepositHandler;
@@ -35,12 +36,12 @@ import java.io.InputStream;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 
-public class ContainerHandlerImpl extends BaseHandler implements ContainerHandler {
+public class ContainerResourceImpl extends BaseHandler implements ContainerResource {
     private final DepositReceiptFactory depositReceiptFactory;
     private final DepositHandler depositHandler;
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss Z");
 
-    public ContainerHandlerImpl(DepositReceiptFactory depositReceiptFactory, DepositHandler depositHandler, ErrorResponseFactory errorResponseFactory) {
+    public ContainerResourceImpl(DepositReceiptFactory depositReceiptFactory, DepositHandler depositHandler, ErrorResponseFactory errorResponseFactory) {
         super(errorResponseFactory);
         this.depositReceiptFactory = depositReceiptFactory;
         this.depositHandler = depositHandler;
@@ -64,6 +65,9 @@ public class ContainerHandlerImpl extends BaseHandler implements ContainerHandle
         catch (DepositNotFoundException e) {
             throw new WebApplicationException(403);
         }
+        catch (InvalidDepositException e) {
+            throw new WebApplicationException(500);
+        }
     }
 
     @Override
@@ -79,7 +83,7 @@ public class ContainerHandlerImpl extends BaseHandler implements ContainerHandle
                 .build();
 
         }
-        catch (DepositNotFoundException e) {
+        catch (DepositNotFoundException | InvalidDepositException e) {
             throw new WebApplicationException(403);
         }
     }
@@ -124,6 +128,9 @@ public class ContainerHandlerImpl extends BaseHandler implements ContainerHandle
         catch (DepositNotFoundException e) {
             // TODO find out how the specs deal with an unknown deposit
             throw new WebApplicationException(e, 404);
+        }
+        catch (InvalidDepositException e) {
+            throw new WebApplicationException(500);
         }
     }
 

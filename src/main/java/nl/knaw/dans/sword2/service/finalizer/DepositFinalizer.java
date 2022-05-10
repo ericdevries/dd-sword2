@@ -15,21 +15,22 @@
  */
 package nl.knaw.dans.sword2.service.finalizer;
 
-import java.util.concurrent.BlockingQueue;
 import nl.knaw.dans.sword2.exceptions.CollectionNotFoundException;
 import nl.knaw.dans.sword2.exceptions.DepositNotFoundException;
 import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
 import nl.knaw.dans.sword2.exceptions.InvalidPartialFileException;
 import nl.knaw.dans.sword2.service.DepositHandler;
-import nl.knaw.dans.sword2.service.finalizer.DepositFinalizerEvent;
-import nl.knaw.dans.sword2.service.finalizer.DepositFinalizerRetryEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.BlockingQueue;
 
 public class DepositFinalizer implements Runnable {
+    private static final Logger log = LoggerFactory.getLogger(DepositFinalizer.class);
 
     private final DepositHandler depositHandler;
     private final String depositId;
     private final BlockingQueue<DepositFinalizerEvent> taskQueue;
-
 
     public DepositFinalizer(String depositId,
         DepositHandler depositHandler,
@@ -42,24 +43,31 @@ public class DepositFinalizer implements Runnable {
 
     @Override
     public void run() {
-
         try {
             var deposit = depositHandler.finalizeDeposit(depositId);
-        } catch (DepositNotFoundException e) {
-            e.printStackTrace();
-        } catch (InvalidDepositException e) {
-            e.printStackTrace();
-        } catch (InvalidPartialFileException e) {
-            e.printStackTrace();
-        } catch (CollectionNotFoundException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
+            log.info("Finalized deposit {}", deposit);
+        }
+        catch (DepositNotFoundException e) {
+            log.error("Unable to finalize deposit with id {} because it could not be found", depositId, e);
+        }
+        catch (InvalidDepositException e) {
+            log.error("Unable to finalize deposit with id {} because it is invalid", depositId, e);
+        }
+        catch (InvalidPartialFileException e) {
+            log.error("Unable to finalize deposit with id {} because some files are incorrectly named", depositId, e);
+        }
+        catch (CollectionNotFoundException e) {
+            log.error("Unable to finalize deposit with id {} because the collection could not be found", depositId, e);
+        }
+        // in all other cases, we should try again
+        catch (Exception e) {
             try {
-                taskQueue.put(new DepositFinalizerRetryEvent(depositId));
-            } catch (InterruptedException ex) {
-                ex.printStackTrace();
+                log.warn("Rescheduling deposit with ID {}", depositId, e);
+                taskQueue.put(new DepositFinalizerRescheduleEvent(depositId));
+            }
+            catch (InterruptedException ex) {
+                log.error("Unable to add deposit with ID {} to reschedule queue", depositId, ex);
             }
         }
     }
-
 }

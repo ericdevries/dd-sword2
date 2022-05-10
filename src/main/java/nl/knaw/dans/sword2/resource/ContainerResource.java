@@ -17,9 +17,7 @@ package nl.knaw.dans.sword2.resource;
 
 import io.dropwizard.auth.Auth;
 import nl.knaw.dans.sword2.auth.Depositor;
-import nl.knaw.dans.sword2.exceptions.DepositNotFoundException;
 
-import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.HEAD;
 import javax.ws.rs.POST;
@@ -33,7 +31,7 @@ import javax.ws.rs.core.Response;
 import java.io.InputStream;
 
 @Path("/container/{id}")
-public interface ContainerHandler {
+public interface ContainerResource {
     @GET
     @Produces(MediaType.APPLICATION_XML)
     Response getDepositReceipt(@PathParam("id") String depositId, @Context HttpHeaders headers, @Auth Depositor depositor);
@@ -42,7 +40,6 @@ public interface ContainerHandler {
     Response getDepositReceiptHead(@PathParam("id") String depositId, @Context HttpHeaders headers, @Auth Depositor depositor);
 
     @POST
-//    @Consumes
     @Produces(MediaType.APPLICATION_XML)
     Response addMedia(InputStream inputStream, @PathParam("id") String depositId, @Context HttpHeaders headers, @Auth Depositor depositor);
 }

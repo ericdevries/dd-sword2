@@ -21,6 +21,8 @@ import nl.knaw.dans.sword2.config.CollectionConfig;
 import nl.knaw.dans.sword2.models.service.ServiceCollection;
 import nl.knaw.dans.sword2.models.service.ServiceDocument;
 import nl.knaw.dans.sword2.models.service.ServiceWorkspace;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
@@ -29,12 +31,13 @@ import java.net.URI;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ServiceDocumentHandlerImpl implements ServiceDocumentHandler {
+public class ServiceDocumentResourceImpl implements ServiceDocumentResource {
+    private static final Logger log = LoggerFactory.getLogger(ServiceDocumentResourceImpl.class);
 
     private final List<CollectionConfig> collectionConfigs;
     private final URI baseUri;
 
-    public ServiceDocumentHandlerImpl(List<CollectionConfig> collectionConfigs, URI baseUri) {
+    public ServiceDocumentResourceImpl(List<CollectionConfig> collectionConfigs, URI baseUri) {
         this.collectionConfigs = collectionConfigs;
         this.baseUri = baseUri;
     }
@@ -56,12 +59,17 @@ public class ServiceDocumentHandlerImpl implements ServiceDocumentHandler {
                 c.setTitle(collection.getName());
                 c.setAcceptPackaging(UriRegistry.PACKAGE_BAGIT);
 
+                log.trace("Service collection for depositor {}: {}", depositor, c);
+
                 return c;
             }).collect(Collectors.toList());
 
         workspace.setCollections(collections);
 
         service.setWorkspaces(List.of(workspace));
+
+        var collectionIds = collectionConfigs.stream().map(CollectionConfig::getName).collect(Collectors.joining(", "));
+        log.info("Returning service document for user {} and collections {}", depositor, collectionIds);
 
         return Response.status(Status.OK).entity(service).build();
     }

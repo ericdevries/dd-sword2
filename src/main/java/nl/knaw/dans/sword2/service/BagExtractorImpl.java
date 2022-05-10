@@ -50,7 +50,7 @@ public class BagExtractorImpl implements BagExtractor {
     }
 
     @Override
-    public void extractBag(Path path, String mimeType, boolean filePathMapping) throws Exception, InvalidDepositException, InvalidPartialFileException {
+    public void extractBag(Path path, String mimeType, boolean filePathMapping) throws InvalidDepositException, InvalidPartialFileException, IOException {
         log.debug("Extracting bag {} with mimeType {} and file path mapping set to {}", path, mimeType, filePathMapping);
 
         switch (mimeType) {
@@ -67,7 +67,7 @@ public class BagExtractorImpl implements BagExtractor {
         }
     }
 
-    void extractOctetStream(Path path, boolean filePathMapping) throws Exception, InvalidPartialFileException, InvalidDepositException {
+    void extractOctetStream(Path path, boolean filePathMapping) throws InvalidPartialFileException, InvalidDepositException, IOException {
         var files = getDepositFiles(path);
         var sorting = new HashMap<Path, Integer>();
 
@@ -86,7 +86,7 @@ public class BagExtractorImpl implements BagExtractor {
         extractZips(path, filePathMapping);
     }
 
-    int getSequenceNumber(Path path) throws Exception, InvalidPartialFileException {
+    int getSequenceNumber(Path path) throws InvalidPartialFileException {
         var parts = path.getFileName().toString().split("\\.");
 
         if (parts.length <= 1) {

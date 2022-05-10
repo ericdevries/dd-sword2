@@ -21,7 +21,6 @@ import nl.knaw.dans.sword2.exceptions.CollectionNotFoundException;
 import nl.knaw.dans.sword2.exceptions.DepositNotFoundException;
 import nl.knaw.dans.sword2.exceptions.DepositReadOnlyException;
 import nl.knaw.dans.sword2.exceptions.HashMismatchException;
-import nl.knaw.dans.sword2.exceptions.InvalidContentDispositionException;
 import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
 import nl.knaw.dans.sword2.exceptions.InvalidPartialFileException;
 import nl.knaw.dans.sword2.exceptions.NotEnoughDiskSpaceException;
@@ -29,21 +28,24 @@ import nl.knaw.dans.sword2.exceptions.NotEnoughDiskSpaceException;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Path;
-import java.security.NoSuchAlgorithmException;
+import java.util.List;
 
 public interface DepositHandler {
 
-    Deposit getDeposit(String depositId, Depositor depositor) throws DepositNotFoundException;
+    Deposit getDeposit(String depositId, Depositor depositor) throws DepositNotFoundException, InvalidDepositException;
 
-    Deposit getDeposit(String depositId) throws DepositNotFoundException;
+    Deposit getDeposit(String depositId) throws DepositNotFoundException, InvalidDepositException;
 
-    Deposit createDepositWithPayload(String collectionId, Depositor depositor, boolean inProgress, MediaType contentType, String hash, String packaging, String filename, long filesize, InputStream inputStream)
-        throws CollectionNotFoundException, IOException, NotEnoughDiskSpaceException, HashMismatchException;
+    List<Deposit> getOpenDeposits();
 
-    Deposit addPayloadToDeposit(String depositId, Depositor depositor, boolean inProgress, MediaType contentType, String hash, String packaging, String filename, long filesize, InputStream inputStream)
-        throws CollectionNotFoundException, IOException, NotEnoughDiskSpaceException, HashMismatchException, DepositNotFoundException, DepositReadOnlyException;
+    Deposit createDepositWithPayload(String collectionId, Depositor depositor, boolean inProgress, MediaType contentType, String hash, String packaging, String filename, long filesize,
+        InputStream inputStream)
+        throws CollectionNotFoundException, IOException, NotEnoughDiskSpaceException, HashMismatchException, InvalidDepositException;
 
-    Deposit finalizeDeposit(String depositId) throws DepositNotFoundException, Exception, InvalidDepositException, InvalidPartialFileException, CollectionNotFoundException;
+    Deposit addPayloadToDeposit(String depositId, Depositor depositor, boolean inProgress, MediaType contentType, String hash, String packaging, String filename, long filesize,
+        InputStream inputStream)
+        throws CollectionNotFoundException, IOException, NotEnoughDiskSpaceException, HashMismatchException, DepositNotFoundException, DepositReadOnlyException, InvalidDepositException;
+
+    Deposit finalizeDeposit(String depositId) throws DepositNotFoundException, InvalidDepositException, InvalidPartialFileException, CollectionNotFoundException, IOException;
 }
 

@@ -49,7 +49,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(DropwizardExtensionsSupport.class)
-class CollectionHandlerImplTest {
+class CollectionResourceImplTest {
 
     private static DropwizardAppExtension<DdSword2Configuration> EXT = new DropwizardAppExtension<>(
         DdSword2Application.class,

@@ -47,7 +47,7 @@ public class BagItManagerImpl implements BagItManager {
     }
 
     @Override
-    public BagItMetaData getBagItMetaData(Path path, String depositId) throws Exception {
+    public BagItMetaData getBagItMetaData(Path path, String depositId) throws InvalidDepositException {
         try {
             var bag = new BagReader().read(path);
             var metadata = new BagItMetaData();
@@ -60,7 +60,7 @@ public class BagItManagerImpl implements BagItManager {
                         metadata.setSwordToken("sword:" + token.substring("urn:uuid:".length()));
                     }
                     else {
-                        System.out.println("INVALID TOKEN!");
+                        throw new InvalidDepositException(String.format("The deposit located at %s and ID %s has an invalid SWORD token: %s", path, depositId, token));
                     }
                 }
             }
@@ -73,11 +73,9 @@ public class BagItManagerImpl implements BagItManager {
 
             return metadata;
         }
-        catch (Exception e) {
-            e.printStackTrace();
+        catch (IOException | UnparsableVersionException | MaliciousPathException | UnsupportedAlgorithmException | InvalidBagitFileFormatException e) {
+            throw new InvalidDepositException(String.format("The deposit located at %s and ID %s could not be correctly parsed", path, depositId), e);
         }
-
-        throw new Exception("OH O");
     }
 
     boolean isManifestFile(Path path) {

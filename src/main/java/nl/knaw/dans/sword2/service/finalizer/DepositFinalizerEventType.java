@@ -17,5 +17,5 @@
 package nl.knaw.dans.sword2.service.finalizer;
 
 public enum DepositFinalizerEventType {
-    STOP, FINALIZE, RETRY
+    STOP, FINALIZE, RESCHEDULE
 }

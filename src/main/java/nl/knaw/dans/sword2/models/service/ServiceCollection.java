@@ -67,4 +67,13 @@ public class ServiceCollection {
         this.acceptPackaging = acceptPackaging;
     }
 
+    @Override
+    public String toString() {
+        return "ServiceCollection{" +
+            "href=" + href +
+            ", title='" + title + '\'' +
+            ", acceptPackaging='" + acceptPackaging + '\'' +
+            ", mediation=" + mediation +
+            '}';
+    }
 }

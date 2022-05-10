@@ -56,7 +56,7 @@ class DepositHandlerImplTest {
         FileUtils.deleteDirectory(new File("data/tmp/deposithandler/"));
     }
 
-    Path createDepositFrom(String name, String id, DepositState state) throws IOException {
+    Path createDepositFrom(String name, String id, DepositState state) throws IOException, InvalidDepositException {
         var bagName = "/zips/" + name;
         var p = getClass().getResource(bagName);
         assert p != null;

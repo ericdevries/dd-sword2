@@ -15,6 +15,9 @@
  */
 package nl.knaw.dans.sword2.resource;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.ext.WriterInterceptor;
 import javax.ws.rs.ext.WriterInterceptorContext;
@@ -26,6 +29,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
 
 public class HashHeaderInterceptor implements WriterInterceptor {
+    private static final Logger log = LoggerFactory.getLogger(HashHeaderInterceptor.class);
+
     @Override
     public void aroundWriteTo(WriterInterceptorContext context) throws IOException, WebApplicationException {
         try {
@@ -35,10 +40,12 @@ public class HashHeaderInterceptor implements WriterInterceptor {
 
             var checksum = DatatypeConverter.printHexBinary(digest.digest()).toLowerCase(Locale.ROOT);
             context.getHeaders().add("Content-MD5", checksum);
+
+            log.debug("Set Content-MD5 checksum for response payload to {}", checksum);
         }
         catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
+            log.error("No such algorithm", e);
+            context.proceed();
         }
-
     }
 }

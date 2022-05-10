@@ -39,4 +39,11 @@ public class DepositFinalizerEvent {
         return depositId;
     }
 
+    @Override
+    public String toString() {
+        return "DepositFinalizerEvent{" +
+            "depositId='" + depositId + '\'' +
+            ", eventType=" + eventType +
+            '}';
+    }
 }

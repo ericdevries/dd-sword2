@@ -36,7 +36,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.stream.Collectors;
@@ -69,7 +71,7 @@ public class DepositHandlerImpl implements DepositHandler {
 
     @Override
     public Deposit createDepositWithPayload(String collectionId, Depositor depositor, boolean inProgress, MediaType contentType, String hash, String packaging, String filename, long filesize,
-        InputStream inputStream) throws CollectionNotFoundException, IOException, NotEnoughDiskSpaceException, HashMismatchException {
+        InputStream inputStream) throws CollectionNotFoundException, IOException, NotEnoughDiskSpaceException, HashMismatchException, InvalidDepositException {
 
         var id = UUID.randomUUID().toString();
         var collection = collectionManager.getCollectionByPath(collectionId, depositor);
@@ -113,7 +115,8 @@ public class DepositHandlerImpl implements DepositHandler {
 
     @Override
     public Deposit addPayloadToDeposit(String depositId, Depositor depositor, boolean inProgress, MediaType contentType, String hash, String packaging, String filename, long filesize,
-        InputStream inputStream) throws IOException, NotEnoughDiskSpaceException, HashMismatchException, DepositNotFoundException, DepositReadOnlyException, CollectionNotFoundException {
+        InputStream inputStream)
+        throws IOException, NotEnoughDiskSpaceException, HashMismatchException, DepositNotFoundException, DepositReadOnlyException, CollectionNotFoundException, InvalidDepositException {
 
         var deposit = getDeposit(depositId, depositor);
         var path = deposit.getPath().resolve(filename);
@@ -139,7 +142,7 @@ public class DepositHandlerImpl implements DepositHandler {
     }
 
     @Override
-    public Deposit getDeposit(String depositId, Depositor depositor) throws DepositNotFoundException {
+    public Deposit getDeposit(String depositId, Depositor depositor) throws DepositNotFoundException, InvalidDepositException {
         var deposit = getDeposit(depositId);
 
         if (depositor.getName().equals(deposit.getDepositor())) {
@@ -150,21 +153,26 @@ public class DepositHandlerImpl implements DepositHandler {
     }
 
     @Override
-    public Deposit getDeposit(String depositId) throws DepositNotFoundException {
+    public Deposit getDeposit(String depositId) throws DepositNotFoundException, InvalidDepositException {
         var collections = collectionManager.getCollections();
 
         for (var collection : collections) {
-            // TODO add more paths here (archived etc)
-            var searchPaths = List.of(collection.getUploads().resolve(depositId), collection.getDeposits().resolve(depositId));
+            var basePaths = new ArrayList<Path>();
+            basePaths.add(collection.getUploads());
+            basePaths.add(collection.getDeposits());
+            basePaths.add(collection.getDeposits().resolve("processed"));
+            basePaths.add(collection.getDeposits().resolve("rejected"));
+            basePaths.add(collection.getDeposits().resolve("failed"));
 
-            for (var path : searchPaths) {
-                var exists = fileService.exists(path);
+            for (var path : basePaths) {
+                var depositPath = path.resolve(depositId);
+                var exists = fileService.exists(depositPath);
 
-                log.trace("Checking if {} exists (answer: {})", path, exists);
+                log.trace("Checking if {} exists (answer: {})", depositPath, exists);
 
                 if (exists) {
-                    var deposit = depositPropertiesManager.getProperties(path);
-                    deposit.setPath(path);
+                    var deposit = depositPropertiesManager.getProperties(depositPath);
+                    deposit.setPath(depositPath);
                     deposit.setCollectionId(collection.getName());
 
                     return deposit;
@@ -175,7 +183,38 @@ public class DepositHandlerImpl implements DepositHandler {
         throw new DepositNotFoundException(String.format("Deposit with id %s could not be found", depositId));
     }
 
-    void startFinalizingDeposit(Deposit deposit) throws CollectionNotFoundException {
+    @Override
+    public List<Deposit> getOpenDeposits() {
+        return collectionManager.getCollections().stream().map(collection -> {
+                try {
+                    return fileService.listDirectories(collection.getUploads()).stream().map(path -> {
+                        try {
+                            var deposit = depositPropertiesManager.getProperties(path);
+                            deposit.setPath(path);
+                            deposit.setCollectionId(collection.getName());
+
+                            return deposit;
+                        }
+                        catch (Exception | InvalidDepositException e) {
+                            log.error("Unable to open deposit from path {}", path, e);
+                        }
+
+                        return null;
+                    }).filter(Objects::nonNull);
+                }
+                catch (IOException e) {
+                    log.error("Unable to list directories in path {}", collection.getUploads());
+                }
+
+                return null;
+            })
+            .filter(Objects::nonNull)
+            .flatMap(s -> s)
+            .filter(deposit -> DepositState.UPLOADED.equals(deposit.getState()) || DepositState.FINALIZING.equals(deposit.getState()))
+            .collect(Collectors.toList());
+    }
+
+    void startFinalizingDeposit(Deposit deposit) throws CollectionNotFoundException, InvalidDepositException {
         // if deposit is not in progress
         // set state to UPLOADED
         if (deposit.isInProgress()) {
@@ -198,7 +237,7 @@ public class DepositHandlerImpl implements DepositHandler {
     }
 
     @Override
-    public Deposit finalizeDeposit(String depositId) throws DepositNotFoundException, Exception, InvalidDepositException, InvalidPartialFileException, CollectionNotFoundException {
+    public Deposit finalizeDeposit(String depositId) throws DepositNotFoundException, InvalidDepositException, InvalidPartialFileException, CollectionNotFoundException, IOException {
         var deposit = getDeposit(depositId);
         var path = deposit.getPath();
         var depositor = userManager.getDepositorById(deposit.getDepositor());

@@ -17,7 +17,6 @@ package nl.knaw.dans.sword2.resource;
 
 import io.dropwizard.auth.Auth;
 import nl.knaw.dans.sword2.auth.Depositor;
-import nl.knaw.dans.sword2.models.entry.Entry;
 import nl.knaw.dans.sword2.models.statement.Feed;
 import org.glassfish.jersey.media.multipart.MultiPart;
 
@@ -34,7 +33,7 @@ import javax.ws.rs.core.Response;
 import java.io.InputStream;
 
 @Path("/collection/{id}")
-public interface CollectionHandler {
+public interface CollectionResource {
 
     @GET
     @Produces(MediaType.APPLICATION_XML)
