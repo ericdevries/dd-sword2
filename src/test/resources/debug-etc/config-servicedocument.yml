@@ -14,10 +14,11 @@ server:
 
 users:
   - name: 'user001'
-    passwordHash: ''
+    passwordHash: '$2a$10$yvmSYczU7z4KL6qmRCTgTeSvo7uurwPUbB9s/mTKzJrYM/sQKgF.y'
     filepathMapping: true
     collections:
       - collection1
+      - collection2
 
 sword2:
   baseUrl: 'http://localhost:20320/'

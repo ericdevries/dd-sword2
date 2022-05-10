@@ -23,6 +23,8 @@ import io.dropwizard.testing.junit5.DropwizardAppExtension;
 import io.dropwizard.testing.junit5.DropwizardExtensionsSupport;
 import java.io.StringWriter;
 import java.net.URI;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
@@ -46,6 +48,7 @@ class ServiceDocumentHandlerImplTest {
         var result = EXT.client()
             .target(url)
             .request()
+            .header("authorization", "Basic dXNlcjAwMTp1c2VyMDAx")
             .get();
 
         var serviceDocument = result.readEntity(ServiceDocument.class);
@@ -55,7 +58,6 @@ class ServiceDocumentHandlerImplTest {
         assertEquals(1,
             serviceDocument.getWorkspaces()
                 .size());
-
 
         var workspace = serviceDocument.getWorkspaces().get(0);
 
@@ -73,6 +75,9 @@ class ServiceDocumentHandlerImplTest {
         assertEquals(URI.create("http://localhost:20320/collection/2"), collection2.getHref());
         assertFalse(collection2.isMediation());
         assertEquals("http://purl.org/net/sword/package/BagIt", collection2.getAcceptPackaging());
+
+        var checksum = result.getHeaderString("Content-MD5");
+        assertEquals("1c62de3fac16661d834bd3c4b6318c96", checksum);
     }
 
     void printServiceDocument(ServiceDocument serviceDocument) throws JAXBException {

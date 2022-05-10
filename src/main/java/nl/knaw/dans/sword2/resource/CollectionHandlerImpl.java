@@ -150,10 +150,8 @@ public class CollectionHandlerImpl extends BaseHandler implements CollectionHand
 
             var entry = depositReceiptFactory.createDepositReceipt(deposit);
 
-            // TODO calculate md5 of response `entry`
             return Response.status(Response.Status.CREATED)
                 .header("Last-Modified", formatDateTime(deposit.getCreated()))
-                .header("Content-MD5", md5)
                 .header("Location", depositReceiptFactory.getDepositLocation(deposit))
                 .entity(entry)
                 .build();

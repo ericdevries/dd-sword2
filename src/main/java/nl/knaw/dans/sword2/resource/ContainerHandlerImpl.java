@@ -105,7 +105,6 @@ public class ContainerHandlerImpl extends BaseHandler implements ContainerHandle
                 .header("Location", location)
                 .header("Content-Type", "application/atom+xml;type=entry")
                 .header("Last-Modified", OffsetDateTime.now().format(dateTimeFormatter))
-                .header("Content-MD5", "") // TODO fix
                 .entity(entry)
                 .build();
         }
@@ -113,6 +112,7 @@ public class ContainerHandlerImpl extends BaseHandler implements ContainerHandle
             return buildSwordErrorResponse(UriRegistry.ERROR_BAD_REQUEST, e.getMessage());
         }
         catch (CollectionNotFoundException | DepositReadOnlyException e) {
+            e.printStackTrace();
             return buildSwordErrorResponse(UriRegistry.ERROR_METHOD_NOT_ALLOWED, e.getMessage());
         }
         catch (HashMismatchException e) {
@@ -123,7 +123,7 @@ public class ContainerHandlerImpl extends BaseHandler implements ContainerHandle
         }
         catch (DepositNotFoundException e) {
             // TODO find out how the specs deal with an unknown deposit
-            throw new WebApplicationException(404);
+            throw new WebApplicationException(e, 404);
         }
     }
 

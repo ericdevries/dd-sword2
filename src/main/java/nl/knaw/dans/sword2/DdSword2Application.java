@@ -27,6 +27,7 @@ import nl.knaw.dans.sword2.auth.Depositor;
 import nl.knaw.dans.sword2.auth.SwordAuthenticator;
 import nl.knaw.dans.sword2.resource.CollectionHandlerImpl;
 import nl.knaw.dans.sword2.resource.ContainerHandlerImpl;
+import nl.knaw.dans.sword2.resource.HashHeaderInterceptor;
 import nl.knaw.dans.sword2.resource.ServiceDocumentHandlerImpl;
 import nl.knaw.dans.sword2.resource.StatementHandlerImpl;
 import nl.knaw.dans.sword2.service.BagExtractorImpl;
@@ -100,6 +101,8 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
 
         // Managed classes
         environment.lifecycle().manage(depositFinalizerManager);
+
+        environment.jersey().register(HashHeaderInterceptor.class);
 
         // Resources
         environment.jersey().register(new CollectionHandlerImpl(depositHandler, depositReceiptFactory, errorResponseFactory));

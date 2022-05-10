@@ -22,7 +22,6 @@ import nl.knaw.dans.sword2.DepositState;
 import nl.knaw.dans.sword2.exceptions.DepositNotFoundException;
 import nl.knaw.dans.sword2.models.statement.Feed;
 import nl.knaw.dans.sword2.service.DepositHandler;
-import nl.knaw.dans.sword2.service.DepositHandlerImpl;
 import nl.knaw.dans.sword2.service.ErrorResponseFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +33,7 @@ import javax.xml.bind.Marshaller;
 import java.io.StringWriter;
 import java.net.URI;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -44,13 +44,14 @@ class StatementHandlerImplTest {
     private static final ResourceExtension EXT = ResourceExtension.builder()
         .bootstrapLogging(true)
         .addResource(new StatementHandlerImpl(URI.create("http://localhost:8080"), depositHandler, errorResponseFactory))
+        .addResource(HashHeaderInterceptor::new)
         .build();
 
     @Test
     void testStatement() throws JAXBException, DepositNotFoundException {
         var deposit = new Deposit();
         deposit.setId("a03ca6f1-608b-4247-8c22-99681b8494a0");
-        deposit.setCreated(OffsetDateTime.now());
+        deposit.setCreated(OffsetDateTime.of(2022, 5, 1, 1, 2, 3, 4, ZoneOffset.UTC));
         deposit.setState(DepositState.SUBMITTED);
         deposit.setStateDescription("Submitted");
 
@@ -63,7 +64,13 @@ class StatementHandlerImplTest {
         assertEquals(200, response.getStatus());
 
         var feed = response.readEntity(Feed.class);
-        printStatement(feed);
+
+        assertEquals("http://localhost:8080/statement/a03ca6f1-608b-4247-8c22-99681b8494a0", feed.getId());
+        assertEquals("SUBMITTED", feed.getCategory().getTerm());
+
+        var hash = response.getHeaderString("content-md5");
+        assertEquals("3e6c71536f140575298098529f80cd52", hash);
+
     }
 
     void printStatement(Feed feed) throws JAXBException {

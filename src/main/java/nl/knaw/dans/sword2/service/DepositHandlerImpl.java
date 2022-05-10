@@ -79,7 +79,6 @@ public class DepositHandlerImpl implements DepositHandler {
         assertTempDirHasEnoughDiskspaceMarginForFile(collection.getUploads(), filesize);
 
         var path = collection.getUploads().resolve(id).resolve(filename);
-
         var depositFolder = path.getParent();
 
         // check if the hash matches the one provided by the user
@@ -91,7 +90,7 @@ public class DepositHandlerImpl implements DepositHandler {
 
         var deposit = new Deposit();
         deposit.setId(id);
-        deposit.setCollectionId(collectionId);
+        deposit.setCollectionId(collection.getName());
         deposit.setInProgress(inProgress);
         deposit.setFilename(filename);
         deposit.setMd5(calculatedHash);
@@ -159,7 +158,11 @@ public class DepositHandlerImpl implements DepositHandler {
             var searchPaths = List.of(collection.getUploads().resolve(depositId), collection.getDeposits().resolve(depositId));
 
             for (var path : searchPaths) {
-                if (fileService.exists(path)) {
+                var exists = fileService.exists(path);
+
+                log.trace("Checking if {} exists (answer: {})", path, exists);
+
+                if (exists) {
                     var deposit = depositPropertiesManager.getProperties(path);
                     deposit.setPath(path);
                     deposit.setCollectionId(collection.getName());
@@ -180,7 +183,7 @@ public class DepositHandlerImpl implements DepositHandler {
             return;
         }
 
-        var collection = collectionManager.getCollectionByPath(deposit.getCollectionId());
+        var collection = collectionManager.getCollectionByName(deposit.getCollectionId());
         var path = getUploadPath(collection, deposit.getId());
 
         deposit.setState(DepositState.UPLOADED);

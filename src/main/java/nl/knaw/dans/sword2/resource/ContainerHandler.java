@@ -42,7 +42,7 @@ public interface ContainerHandler {
     Response getDepositReceiptHead(@PathParam("id") String depositId, @Context HttpHeaders headers, @Auth Depositor depositor);
 
     @POST
-    @Consumes
+//    @Consumes
     @Produces(MediaType.APPLICATION_XML)
     Response addMedia(InputStream inputStream, @PathParam("id") String depositId, @Context HttpHeaders headers, @Auth Depositor depositor);
 }
