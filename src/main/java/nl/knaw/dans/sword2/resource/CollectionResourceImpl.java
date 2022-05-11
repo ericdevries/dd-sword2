@@ -15,24 +15,25 @@
  */
 package nl.knaw.dans.sword2.resource;
 
-import nl.knaw.dans.sword2.UriRegistry;
+import java.io.OutputStream;
+import javax.ws.rs.core.Response.Status;
+import nl.knaw.dans.sword2.config.UriRegistry;
 import nl.knaw.dans.sword2.auth.Depositor;
-import nl.knaw.dans.sword2.exceptions.CollectionNotFoundException;
-import nl.knaw.dans.sword2.exceptions.HashMismatchException;
-import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
-import nl.knaw.dans.sword2.exceptions.InvalidHeaderException;
-import nl.knaw.dans.sword2.exceptions.NotEnoughDiskSpaceException;
-import nl.knaw.dans.sword2.models.error.Generator;
-import nl.knaw.dans.sword2.models.statement.Feed;
-import nl.knaw.dans.sword2.models.statement.FeedEntry;
-import nl.knaw.dans.sword2.service.DepositHandler;
-import nl.knaw.dans.sword2.service.DepositReceiptFactory;
-import nl.knaw.dans.sword2.service.ErrorResponseFactory;
+import nl.knaw.dans.sword2.core.exceptions.CollectionNotFoundException;
+import nl.knaw.dans.sword2.core.exceptions.HashMismatchException;
+import nl.knaw.dans.sword2.core.exceptions.InvalidDepositException;
+import nl.knaw.dans.sword2.core.exceptions.InvalidHeaderException;
+import nl.knaw.dans.sword2.core.exceptions.NotEnoughDiskSpaceException;
+import nl.knaw.dans.sword2.api.error.Generator;
+import nl.knaw.dans.sword2.api.statement.Feed;
+import nl.knaw.dans.sword2.api.statement.FeedEntry;
+import nl.knaw.dans.sword2.core.service.DepositHandler;
+import nl.knaw.dans.sword2.core.service.DepositReceiptFactory;
+import nl.knaw.dans.sword2.core.service.ErrorResponseFactory;
 import org.glassfish.jersey.media.multipart.MultiPart;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
@@ -72,7 +73,19 @@ public class CollectionResourceImpl extends BaseHandler implements CollectionRes
     @Override
     public Response depositAnything(InputStream inputStream, String collectionId, HttpHeaders headers, Depositor depositor) {
 
+//        if ("100-continue".equalsIgnoreCase(headers.getHeaderString("expect"))) {
+//            return Response.status(100).build();
+//        }
+
         try {
+            for (var header: headers.getRequestHeaders().entrySet()) {
+
+                System.out.println("Header: " + header.getKey());
+
+                for (var value: header.getValue()) {
+                    System.out.println(" - " + value);
+                }
+            }
             var contentType = getContentType(headers.getHeaderString("content-type"));
             var inProgress = getInProgress(headers.getHeaderString("in-progress"));
 

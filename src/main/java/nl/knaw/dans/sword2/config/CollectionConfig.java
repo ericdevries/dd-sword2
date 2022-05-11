@@ -16,7 +16,7 @@
 package nl.knaw.dans.sword2.config;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import nl.knaw.dans.sword2.DepositState;
+import nl.knaw.dans.sword2.core.DepositState;
 import nl.knaw.dans.sword2.config.converter.StringByteSizeConverter;
 
 import javax.validation.Valid;

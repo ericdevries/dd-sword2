@@ -16,15 +16,15 @@
 package nl.knaw.dans.sword2.resource;
 
 import nl.knaw.dans.sword2.auth.Depositor;
-import nl.knaw.dans.sword2.exceptions.DepositNotFoundException;
-import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
-import nl.knaw.dans.sword2.models.entry.Link;
-import nl.knaw.dans.sword2.models.statement.Feed;
-import nl.knaw.dans.sword2.models.statement.FeedAuthor;
-import nl.knaw.dans.sword2.models.statement.FeedCategory;
-import nl.knaw.dans.sword2.models.statement.TextElement;
-import nl.knaw.dans.sword2.service.DepositHandler;
-import nl.knaw.dans.sword2.service.ErrorResponseFactory;
+import nl.knaw.dans.sword2.core.exceptions.DepositNotFoundException;
+import nl.knaw.dans.sword2.core.exceptions.InvalidDepositException;
+import nl.knaw.dans.sword2.api.entry.Link;
+import nl.knaw.dans.sword2.api.statement.Feed;
+import nl.knaw.dans.sword2.api.statement.FeedAuthor;
+import nl.knaw.dans.sword2.api.statement.FeedCategory;
+import nl.knaw.dans.sword2.api.statement.TextElement;
+import nl.knaw.dans.sword2.core.service.DepositHandler;
+import nl.knaw.dans.sword2.core.service.ErrorResponseFactory;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;

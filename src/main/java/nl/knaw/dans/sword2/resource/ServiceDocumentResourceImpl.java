@@ -15,12 +15,12 @@
  */
 package nl.knaw.dans.sword2.resource;
 
-import nl.knaw.dans.sword2.UriRegistry;
+import nl.knaw.dans.sword2.config.UriRegistry;
 import nl.knaw.dans.sword2.auth.Depositor;
 import nl.knaw.dans.sword2.config.CollectionConfig;
-import nl.knaw.dans.sword2.models.service.ServiceCollection;
-import nl.knaw.dans.sword2.models.service.ServiceDocument;
-import nl.knaw.dans.sword2.models.service.ServiceWorkspace;
+import nl.knaw.dans.sword2.api.service.ServiceCollection;
+import nl.knaw.dans.sword2.api.service.ServiceDocument;
+import nl.knaw.dans.sword2.api.service.ServiceWorkspace;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

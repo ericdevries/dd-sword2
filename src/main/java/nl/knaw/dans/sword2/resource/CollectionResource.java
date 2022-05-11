@@ -16,8 +16,9 @@
 package nl.knaw.dans.sword2.resource;
 
 import io.dropwizard.auth.Auth;
+import java.io.OutputStream;
 import nl.knaw.dans.sword2.auth.Depositor;
-import nl.knaw.dans.sword2.models.statement.Feed;
+import nl.knaw.dans.sword2.api.statement.Feed;
 import org.glassfish.jersey.media.multipart.MultiPart;
 
 import javax.ws.rs.Consumes;
