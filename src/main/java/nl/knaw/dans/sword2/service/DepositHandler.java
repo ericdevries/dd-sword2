@@ -16,6 +16,7 @@
 package nl.knaw.dans.sword2.service;
 
 import nl.knaw.dans.sword2.Deposit;
+import nl.knaw.dans.sword2.DepositState;
 import nl.knaw.dans.sword2.auth.Depositor;
 import nl.knaw.dans.sword2.exceptions.CollectionNotFoundException;
 import nl.knaw.dans.sword2.exceptions.DepositNotFoundException;
@@ -46,6 +47,11 @@ public interface DepositHandler {
         InputStream inputStream)
         throws CollectionNotFoundException, IOException, NotEnoughDiskSpaceException, HashMismatchException, DepositNotFoundException, DepositReadOnlyException, InvalidDepositException;
 
-    Deposit finalizeDeposit(String depositId) throws DepositNotFoundException, InvalidDepositException, InvalidPartialFileException, CollectionNotFoundException, IOException;
+    Deposit finalizeDeposit(String depositId)
+        throws DepositNotFoundException, InvalidDepositException, InvalidPartialFileException, CollectionNotFoundException, IOException, NotEnoughDiskSpaceException;
+
+    void setDepositToInvalid(String depositId, String message) throws InvalidDepositException, DepositNotFoundException;
+
+    void setDepositToRetrying(String depositId) throws InvalidDepositException, DepositNotFoundException;
 }
 

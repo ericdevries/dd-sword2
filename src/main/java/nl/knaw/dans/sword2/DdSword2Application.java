@@ -39,6 +39,7 @@ import nl.knaw.dans.sword2.service.DepositPropertiesManagerImpl;
 import nl.knaw.dans.sword2.service.DepositReceiptFactoryImpl;
 import nl.knaw.dans.sword2.service.ErrorResponseFactoryImpl;
 import nl.knaw.dans.sword2.service.FileServiceImpl;
+import nl.knaw.dans.sword2.service.FilesystemSpaceVerifierImpl;
 import nl.knaw.dans.sword2.service.UserManagerImpl;
 import nl.knaw.dans.sword2.service.ZipServiceImpl;
 import nl.knaw.dans.sword2.service.finalizer.DepositFinalizerEvent;
@@ -70,6 +71,7 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
         var fileService = new FileServiceImpl();
         var depositPropertiesManager = new DepositPropertiesManagerImpl();
         var checksumCalculator = new ChecksumCalculatorImpl();
+        var filesystemSpaceVerifier = new FilesystemSpaceVerifierImpl(fileService);
 
         var errorResponseFactory = new ErrorResponseFactoryImpl();
 
@@ -85,8 +87,9 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
 
         var zipService = new ZipServiceImpl(fileService);
 
-        var bagExtractor = new BagExtractorImpl(zipService, fileService, bagItManager);
-        var depositHandler = new DepositHandlerImpl(configuration.getSword2(), bagExtractor, fileService, depositPropertiesManager, collectionManager, userManager, queue, bagItManager);
+        var bagExtractor = new BagExtractorImpl(zipService, fileService, bagItManager, filesystemSpaceVerifier);
+        var depositHandler = new DepositHandlerImpl(configuration.getSword2(), bagExtractor, fileService, depositPropertiesManager, collectionManager, userManager, queue, bagItManager,
+            filesystemSpaceVerifier);
 
         var depositReceiptFactory = new DepositReceiptFactoryImpl(configuration.getSword2().getBaseUrl());
 

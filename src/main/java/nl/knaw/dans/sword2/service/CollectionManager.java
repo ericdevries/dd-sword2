@@ -19,13 +19,14 @@ import nl.knaw.dans.sword2.auth.Depositor;
 import nl.knaw.dans.sword2.config.CollectionConfig;
 import nl.knaw.dans.sword2.exceptions.CollectionNotFoundException;
 
+import java.nio.file.Path;
 import java.util.List;
 
 public interface CollectionManager {
 
     CollectionConfig getCollectionByPath(String id, Depositor depositor) throws CollectionNotFoundException;
 
-    CollectionConfig getCollectionByPath(String id) throws CollectionNotFoundException;
+    CollectionConfig getCollectionByFilesystemPath(Path path) throws CollectionNotFoundException;
 
     CollectionConfig getCollectionByName(String id) throws CollectionNotFoundException;
 

@@ -17,6 +17,7 @@ package nl.knaw.dans.sword2.service;
 
 import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
 import nl.knaw.dans.sword2.exceptions.InvalidPartialFileException;
+import nl.knaw.dans.sword2.exceptions.NotEnoughDiskSpaceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +34,6 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-@Singleton
 public class BagExtractorImpl implements BagExtractor {
 
     private static final Logger log = LoggerFactory.getLogger(BagExtractorImpl.class);
@@ -41,25 +41,27 @@ public class BagExtractorImpl implements BagExtractor {
     private final ZipService zipService;
     private final FileService fileService;
     private final BagItManager bagItManager;
+    private final FilesystemSpaceVerifier filesystemSpaceVerifier;
 
-    @Inject
-    public BagExtractorImpl(ZipService zipService, FileService fileService, BagItManager bagItManager) {
+    public BagExtractorImpl(ZipService zipService, FileService fileService, BagItManager bagItManager, FilesystemSpaceVerifier filesystemSpaceVerifier) {
         this.zipService = zipService;
         this.fileService = fileService;
         this.bagItManager = bagItManager;
+        this.filesystemSpaceVerifier = filesystemSpaceVerifier;
     }
 
     @Override
-    public void extractBag(Path path, String mimeType, boolean filePathMapping) throws InvalidDepositException, InvalidPartialFileException, IOException {
+    public void extractBag(Path path, long diskSpaceMargin, String mimeType, boolean filePathMapping)
+        throws InvalidDepositException, InvalidPartialFileException, IOException, NotEnoughDiskSpaceException {
         log.debug("Extracting bag {} with mimeType {} and file path mapping set to {}", path, mimeType, filePathMapping);
 
         switch (mimeType) {
             case "application/zip":
-                extractZips(path, filePathMapping);
+                extractZips(path, diskSpaceMargin, filePathMapping);
                 break;
 
             case "application/octet-stream":
-                extractOctetStream(path, filePathMapping);
+                extractOctetStream(path, diskSpaceMargin, filePathMapping);
                 break;
 
             default:
@@ -67,7 +69,7 @@ public class BagExtractorImpl implements BagExtractor {
         }
     }
 
-    void extractOctetStream(Path path, boolean filePathMapping) throws InvalidPartialFileException, InvalidDepositException, IOException {
+    void extractOctetStream(Path path, long diskSpaceMargin, boolean filePathMapping) throws InvalidPartialFileException, InvalidDepositException, IOException, NotEnoughDiskSpaceException {
         var files = getDepositFiles(path);
         var sorting = new HashMap<Path, Integer>();
 
@@ -83,7 +85,7 @@ public class BagExtractorImpl implements BagExtractor {
         fileService.mergeFiles(files, output);
 
         log.debug("Extracting merged zip in path {}", path);
-        extractZips(path, filePathMapping);
+        extractZips(path, diskSpaceMargin, filePathMapping);
     }
 
     int getSequenceNumber(Path path) throws InvalidPartialFileException {
@@ -107,11 +109,11 @@ public class BagExtractorImpl implements BagExtractor {
         }
     }
 
-    void extractZips(Path path, boolean filePathMapping) throws IOException, InvalidDepositException {
+    void extractZips(Path path, long diskSpaceMargin, boolean filePathMapping) throws IOException, InvalidDepositException, NotEnoughDiskSpaceException {
         var files = getDepositFiles(path);
 
         for (var zipFile : files) {
-            extract(zipFile, path, filePathMapping);
+            extract(zipFile, path, diskSpaceMargin, filePathMapping);
         }
     }
 
@@ -119,17 +121,23 @@ public class BagExtractorImpl implements BagExtractor {
         return fileService.listFiles(path).filter(f -> !f.getFileName().equals(Path.of("deposit.properties"))).collect(Collectors.toList());
     }
 
-    void extract(Path zipFile, Path target, boolean filePathMapping) throws IOException, InvalidDepositException {
+    void extract(Path zipFile, Path target, long diskSpaceMargin, boolean filePathMapping) throws IOException, InvalidDepositException, NotEnoughDiskSpaceException {
+
         if (filePathMapping) {
-            extractWithFilePathMapping(zipFile, target, generateFilePathMapping(zipFile));
+            extractWithFilePathMapping(zipFile, target, diskSpaceMargin, generateFilePathMapping(zipFile));
         }
         else {
-            extractWithFilePathMapping(zipFile, target, Map.of());
+            extractWithFilePathMapping(zipFile, target, diskSpaceMargin, Map.of());
         }
     }
 
-    void extractWithFilePathMapping(Path zipFile, Path target, Map<String, String> filePathMapping) throws IOException, InvalidDepositException {
+    void extractWithFilePathMapping(Path zipFile, Path target, long diskSpaceMargin, Map<String, String> filePathMapping) throws IOException, InvalidDepositException, NotEnoughDiskSpaceException {
         fileService.ensureDirectoriesExist(target);
+
+        log.debug("Checking if adequate diskspace is available");
+        var extractedSize = zipService.getExtractedSize(zipFile);
+        filesystemSpaceVerifier.assertDirHasEnoughDiskspaceMarginForFile(zipFile.getParent(), diskSpaceMargin, extractedSize);
+
 
         log.debug("Extracting file {} to target {} with file path mapping set to {}", zipFile, target, filePathMapping);
         zipService.extractZipFileWithFileMapping(zipFile, target, filePathMapping);

@@ -35,10 +35,6 @@ public class Sword2Config {
     private List<CollectionConfig> collections;
     @Valid
     @NotNull
-    @JsonDeserialize(converter = StringByteSizeConverter.class)
-    private long diskSpaceMargin;
-    @Valid
-    @NotNull
     private Duration rescheduleDelay;
     @Valid
     @NotNull
@@ -71,14 +67,6 @@ public class Sword2Config {
         this.collections = collections;
     }
 
-    public long getDiskSpaceMargin() {
-        return diskSpaceMargin;
-    }
-
-    public void setDiskSpaceMargin(long diskSpaceMargin) {
-        this.diskSpaceMargin = diskSpaceMargin;
-    }
-
     public Duration getRescheduleDelay() {
         return rescheduleDelay;
     }
@@ -100,7 +88,6 @@ public class Sword2Config {
         return "Sword2Config{" +
             "baseUrl=" + baseUrl +
             ", collections=" + collections +
-            ", diskSpaceMargin=" + diskSpaceMargin +
             ", rescheduleDelay=" + rescheduleDelay +
             ", finalizingQueue=" + finalizingQueue +
             '}';

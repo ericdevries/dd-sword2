@@ -17,6 +17,7 @@ package nl.knaw.dans.sword2.service;
 
 import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
 import nl.knaw.dans.sword2.exceptions.InvalidPartialFileException;
+import nl.knaw.dans.sword2.exceptions.NotEnoughDiskSpaceException;
 import org.apache.commons.io.FileUtils;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
@@ -44,6 +45,7 @@ class BagExtractorImplTest {
     private final Path testPath = Path.of("data/tmp/bagextractor/");
     private final BagItManager bagItManager = Mockito.mock(BagItManager.class);
     private final ChecksumCalculator checksumCalculator = new ChecksumCalculatorImpl();
+    private final FilesystemSpaceVerifier filesystemSpaceVerifier = Mockito.mock(FilesystemSpaceVerifier.class);
 
     Path getZipFile(String name) {
         var zipName = "/zips/" + name;
@@ -60,13 +62,13 @@ class BagExtractorImplTest {
 
     @AfterEach
     void tearDown() throws IOException {
-//        FileUtils.deleteDirectory(testPath.toFile());
+        //        FileUtils.deleteDirectory(testPath.toFile());
     }
 
     @Test
     void testGenerateEmptyFileMappingForEmptyZip() throws IOException {
         var file = getZipFile("empty.zip");
-        var mapping = new BagExtractorImpl(zipService, fileService, bagItManager).generateFilePathMapping(file);
+        var mapping = new BagExtractorImpl(zipService, fileService, bagItManager, filesystemSpaceVerifier).generateFilePathMapping(file);
 
         assertTrue(mapping.isEmpty());
     }
@@ -74,7 +76,7 @@ class BagExtractorImplTest {
     @Test
     void testGenerateMappingsForFilesUnderPrefix() throws IOException {
         var file = getZipFile("mix.zip");
-        var mapping = new BagExtractorImpl(zipService, fileService, bagItManager)
+        var mapping = new BagExtractorImpl(zipService, fileService, bagItManager, filesystemSpaceVerifier)
             .generateFilePathMapping(file, Pattern.compile("subfolder/"));
 
         Assertions.assertThat(mapping.keySet()).containsOnly("subfolder/test.txt",
@@ -85,21 +87,21 @@ class BagExtractorImplTest {
     }
 
     @Test
-    void testShouldUnzipEmptyZip() throws IOException, InvalidDepositException {
+    void testShouldUnzipEmptyZip() throws IOException, InvalidDepositException, NotEnoughDiskSpaceException {
         var zipFile = getZipFile("empty.zip");
 
-        new BagExtractorImpl(zipService, fileService, bagItManager)
-            .extractWithFilePathMapping(zipFile, testPath.resolve("emptydir"), Map.of());
+        new BagExtractorImpl(zipService, fileService, bagItManager, filesystemSpaceVerifier)
+            .extractWithFilePathMapping(zipFile, testPath.resolve("emptydir"), 1, Map.of());
 
         assertEquals(0, fileService.listFiles(testPath.resolve("emptydir")).count());
     }
 
     @Test
-    void testShouldUnzipFileWithOneUnmappedRootEntry() throws IOException, InvalidDepositException {
+    void testShouldUnzipFileWithOneUnmappedRootEntry() throws IOException, InvalidDepositException, NotEnoughDiskSpaceException {
         var zipFile = getZipFile("one-entry.zip");
 
-        new BagExtractorImpl(zipService, fileService, bagItManager)
-            .extractWithFilePathMapping(zipFile, testPath.resolve("dir1"), Map.of());
+        new BagExtractorImpl(zipService, fileService, bagItManager, filesystemSpaceVerifier)
+            .extractWithFilePathMapping(zipFile, testPath.resolve("dir1"), 1, Map.of());
 
         assertEquals(1, fileService.listFiles(testPath.resolve("dir1")).count());
 
@@ -108,12 +110,12 @@ class BagExtractorImplTest {
     }
 
     @Test
-    void testShouldUnzipFileWithOneMappedRootEntry() throws IOException, InvalidDepositException {
+    void testShouldUnzipFileWithOneMappedRootEntry() throws IOException, InvalidDepositException, NotEnoughDiskSpaceException {
         var zipFile = getZipFile("one-entry.zip");
         var filePathMapping = Map.of("test.txt", "renamed.txt");
 
-        new BagExtractorImpl(zipService, fileService, bagItManager)
-            .extractWithFilePathMapping(zipFile, testPath.resolve("dir1"), filePathMapping);
+        new BagExtractorImpl(zipService, fileService, bagItManager, filesystemSpaceVerifier)
+            .extractWithFilePathMapping(zipFile, testPath.resolve("dir1"), 1, filePathMapping);
 
         assertEquals(1, fileService.listFiles(testPath.resolve("dir1")).count());
 
@@ -122,12 +124,12 @@ class BagExtractorImplTest {
     }
 
     @Test
-    void testShouldUnzipFileWithOneUnmappedEntryInSubfolder() throws IOException, InvalidDepositException {
+    void testShouldUnzipFileWithOneUnmappedEntryInSubfolder() throws IOException, InvalidDepositException, NotEnoughDiskSpaceException {
         var zipFile = getZipFile("one-entry-in-subfolder.zip");
         var filePathMapping = new HashMap<String, String>();
 
-        new BagExtractorImpl(zipService, fileService, bagItManager)
-            .extractWithFilePathMapping(zipFile, testPath.resolve("dir1"), filePathMapping);
+        new BagExtractorImpl(zipService, fileService, bagItManager, filesystemSpaceVerifier)
+            .extractWithFilePathMapping(zipFile, testPath.resolve("dir1"), 1, filePathMapping);
 
         assertEquals(1, fileService.listDirectories(testPath.resolve("dir1")).size());
 
@@ -136,12 +138,12 @@ class BagExtractorImplTest {
     }
 
     @Test
-    void testShouldUnzipFileWithOneMappedEntryInSubfolder() throws IOException, InvalidDepositException {
+    void testShouldUnzipFileWithOneMappedEntryInSubfolder() throws IOException, InvalidDepositException, NotEnoughDiskSpaceException {
         var zipFile = getZipFile("one-entry-in-subfolder.zip");
         var filePathMapping = Map.of("subfolder/test.txt", "renamed.txt");
 
-        new BagExtractorImpl(zipService, fileService, bagItManager)
-            .extractWithFilePathMapping(zipFile, testPath.resolve("dir1"), filePathMapping);
+        new BagExtractorImpl(zipService, fileService, bagItManager, filesystemSpaceVerifier)
+            .extractWithFilePathMapping(zipFile, testPath.resolve("dir1"), 1, filePathMapping);
 
         assertEquals(1, fileService.listFiles(testPath.resolve("dir1")).count());
 
@@ -150,14 +152,14 @@ class BagExtractorImplTest {
     }
 
     @Test
-    void testShouldUnzipFileWithSeveralEntriesSomeInSubfoldersAndSomeMapped() throws IOException, InvalidDepositException {
+    void testShouldUnzipFileWithSeveralEntriesSomeInSubfoldersAndSomeMapped() throws IOException, InvalidDepositException, NotEnoughDiskSpaceException {
         var zipFile = getZipFile("mix.zip");
         var filePathMapping = Map.of(
             "subfolder/test.txt", "renamed.txt",
             "subfolder2/subsubfolder/leaf.txt", "renamed2.txt");
 
-        new BagExtractorImpl(zipService, fileService, bagItManager)
-            .extractWithFilePathMapping(zipFile, testPath.resolve("dir1"), filePathMapping);
+        new BagExtractorImpl(zipService, fileService, bagItManager, filesystemSpaceVerifier)
+            .extractWithFilePathMapping(zipFile, testPath.resolve("dir1"), 1, filePathMapping);
 
         assertEquals(3, fileService.listFiles(testPath.resolve("dir1")).count());
 
@@ -172,7 +174,7 @@ class BagExtractorImplTest {
     }
 
     @Test
-    void testExtractOctetStream() throws Exception, InvalidPartialFileException, InvalidDepositException {
+    void testExtractOctetStream() throws Exception, InvalidPartialFileException, InvalidDepositException, NotEnoughDiskSpaceException {
         // copy a zip into 3 different files
         var zipFile = getZipFile("double-image.zip");
 
@@ -180,8 +182,8 @@ class BagExtractorImplTest {
         var part2 = copyPartOfFile(zipFile, testPath.resolve("part.2"), 1000000, 2000000);
         var part3 = copyPartOfFile(zipFile, testPath.resolve("part.3"), 2000000, Files.size(zipFile));
 
-        new BagExtractorImpl(zipService, fileService, bagItManager)
-            .extractOctetStream(testPath, false);
+        new BagExtractorImpl(zipService, fileService, bagItManager, filesystemSpaceVerifier)
+            .extractOctetStream(testPath, 1, false);
 
         assertEquals(1, fileService.listFiles(testPath).count());
     }

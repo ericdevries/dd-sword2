@@ -24,6 +24,7 @@ import nl.knaw.dans.sword2.exceptions.CollectionNotFoundException;
 import nl.knaw.dans.sword2.exceptions.DepositNotFoundException;
 import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
 import nl.knaw.dans.sword2.exceptions.InvalidPartialFileException;
+import nl.knaw.dans.sword2.exceptions.NotEnoughDiskSpaceException;
 import nl.knaw.dans.sword2.service.finalizer.DepositFinalizerEvent;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -38,14 +39,13 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 class DepositHandlerImplTest {
     final FileService fileService = new FileServiceImpl();
+    final FilesystemSpaceVerifier filesystemSpaceVerifier = Mockito.mock(FilesystemSpaceVerifier.class);
     final ChecksumCalculator checksumCalculator = new ChecksumCalculatorImpl();
     final ZipService zipService = new ZipServiceImpl(fileService);
     final BagItManager bagItManager = new BagItManagerImpl(fileService, checksumCalculator);
-    final BagExtractor bagExtractor = new BagExtractorImpl(zipService, fileService, bagItManager);
+    final BagExtractor bagExtractor = new BagExtractorImpl(zipService, fileService, bagItManager, filesystemSpaceVerifier);
     final DepositPropertiesManager depositPropertiesManager = new DepositPropertiesManagerImpl();
     final CollectionManager collectionManager = Mockito.mock(CollectionManager.class);
     final UserManager userManager = Mockito.mock(UserManager.class);
@@ -85,7 +85,7 @@ class DepositHandlerImplTest {
     }
 
     @Test
-    void finalizeDeposit() throws InvalidDepositException, InvalidPartialFileException, DepositNotFoundException, Exception, CollectionNotFoundException {
+    void finalizeDeposit() throws InvalidDepositException, InvalidPartialFileException, DepositNotFoundException, Exception, CollectionNotFoundException, NotEnoughDiskSpaceException {
         var config = new Sword2Config();
         var collectionConfig = new CollectionConfig();
         collectionConfig.setName("collection1");
@@ -108,7 +108,7 @@ class DepositHandlerImplTest {
         var depositHandler = new DepositHandlerImpl(config,
             bagExtractor,
             fileService,
-            depositPropertiesManager, collectionManager, userManager, queue, bagItManager);
+            depositPropertiesManager, collectionManager, userManager, queue, bagItManager, filesystemSpaceVerifier);
 
         depositHandler.finalizeDeposit("testid");
 

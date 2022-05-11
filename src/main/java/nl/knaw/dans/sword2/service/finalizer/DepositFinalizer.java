@@ -19,6 +19,7 @@ import nl.knaw.dans.sword2.exceptions.CollectionNotFoundException;
 import nl.knaw.dans.sword2.exceptions.DepositNotFoundException;
 import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
 import nl.knaw.dans.sword2.exceptions.InvalidPartialFileException;
+import nl.knaw.dans.sword2.exceptions.NotEnoughDiskSpaceException;
 import nl.knaw.dans.sword2.service.DepositHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +53,13 @@ public class DepositFinalizer implements Runnable {
         }
         catch (InvalidDepositException e) {
             log.error("Unable to finalize deposit with id {} because it is invalid", depositId, e);
+
+            try {
+                depositHandler.setDepositToInvalid(depositId, e.getMessage());
+            }
+            catch (InvalidDepositException | DepositNotFoundException ex) {
+                ex.printStackTrace();
+            }
         }
         catch (InvalidPartialFileException e) {
             log.error("Unable to finalize deposit with id {} because some files are incorrectly named", depositId, e);
@@ -59,15 +67,19 @@ public class DepositFinalizer implements Runnable {
         catch (CollectionNotFoundException e) {
             log.error("Unable to finalize deposit with id {} because the collection could not be found", depositId, e);
         }
-        // in all other cases, we should try again
-        catch (Exception e) {
+        catch (NotEnoughDiskSpaceException e) {
             try {
                 log.warn("Rescheduling deposit with ID {}", depositId, e);
+                depositHandler.setDepositToRetrying(depositId);
                 taskQueue.put(new DepositFinalizerRescheduleEvent(depositId));
             }
-            catch (InterruptedException ex) {
+            catch (InterruptedException | InvalidDepositException | DepositNotFoundException ex) {
                 log.error("Unable to add deposit with ID {} to reschedule queue", depositId, ex);
             }
+        }
+        // in all other cases, we should try again
+        catch (Exception e) {
+            log.error("Unknown error while finalizing deposit", e);
         }
     }
 }

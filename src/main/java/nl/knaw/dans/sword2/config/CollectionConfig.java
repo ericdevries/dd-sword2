@@ -15,8 +15,11 @@
  */
 package nl.knaw.dans.sword2.config;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import nl.knaw.dans.sword2.DepositState;
+import nl.knaw.dans.sword2.config.converter.StringByteSizeConverter;
 
+import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.nio.file.Path;
@@ -31,7 +34,19 @@ public class CollectionConfig {
     private Path uploads;
     @NotNull
     private Path deposits;
+    @Valid
+    @NotNull
+    @JsonDeserialize(converter = StringByteSizeConverter.class)
+    private long diskSpaceMargin;
     private List<DepositState> autoClean;
+
+    public long getDiskSpaceMargin() {
+        return diskSpaceMargin;
+    }
+
+    public void setDiskSpaceMargin(long diskSpaceMargin) {
+        this.diskSpaceMargin = diskSpaceMargin;
+    }
 
     public String getName() {
         return name;

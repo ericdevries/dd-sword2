@@ -15,17 +15,11 @@
  */
 package nl.knaw.dans.sword2.service;
 
-import nl.knaw.dans.sword2.config.CollectionConfig;
-import nl.knaw.dans.sword2.exceptions.InvalidDepositException;
-import nl.knaw.dans.sword2.exceptions.InvalidPartialFileException;
 import nl.knaw.dans.sword2.exceptions.NotEnoughDiskSpaceException;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
 
-public interface BagExtractor {
-    void extractBag(Path path, long diskSpaceMargin, String mimeType, boolean filePathMapping) throws InvalidDepositException, InvalidPartialFileException, IOException, NotEnoughDiskSpaceException;
-
-    Path getBagDir(Path path) throws IOException, InvalidDepositException;
+public interface FilesystemSpaceVerifier {
+    void assertDirHasEnoughDiskspaceMarginForFile(Path destination, long margin, long contentLength) throws IOException, NotEnoughDiskSpaceException;
 }

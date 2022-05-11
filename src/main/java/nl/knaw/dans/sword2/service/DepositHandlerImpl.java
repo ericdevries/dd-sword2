@@ -56,9 +56,10 @@ public class DepositHandlerImpl implements DepositHandler {
     private final UserManager userManager;
     private final BlockingQueue<DepositFinalizerEvent> depositFinalizerQueue;
     private final BagItManager bagItManager;
+    private final FilesystemSpaceVerifier filesystemSpaceVerifier;
 
     public DepositHandlerImpl(Sword2Config sword2Config, BagExtractor bagExtractor, FileService fileService, DepositPropertiesManager depositPropertiesManager, CollectionManager collectionManager,
-        UserManager userManager, BlockingQueue<DepositFinalizerEvent> depositFinalizerQueue, BagItManager bagItManager) {
+        UserManager userManager, BlockingQueue<DepositFinalizerEvent> depositFinalizerQueue, BagItManager bagItManager, FilesystemSpaceVerifier filesystemSpaceVerifier) {
         this.sword2Config = sword2Config;
         this.bagExtractor = bagExtractor;
         this.fileService = fileService;
@@ -67,6 +68,7 @@ public class DepositHandlerImpl implements DepositHandler {
         this.userManager = userManager;
         this.depositFinalizerQueue = depositFinalizerQueue;
         this.bagItManager = bagItManager;
+        this.filesystemSpaceVerifier = filesystemSpaceVerifier;
     }
 
     @Override
@@ -78,7 +80,7 @@ public class DepositHandlerImpl implements DepositHandler {
 
         // make sure the upload directory exists
         fileService.ensureDirectoriesExist(collection.getUploads());
-        assertTempDirHasEnoughDiskspaceMarginForFile(collection.getUploads(), filesize);
+        filesystemSpaceVerifier.assertDirHasEnoughDiskspaceMarginForFile(collection.getUploads(), collection.getDiskSpaceMargin(), filesize);
 
         var path = collection.getUploads().resolve(id).resolve(filename);
         var depositFolder = path.getParent();
@@ -120,8 +122,9 @@ public class DepositHandlerImpl implements DepositHandler {
 
         var deposit = getDeposit(depositId, depositor);
         var path = deposit.getPath().resolve(filename);
+        var collection = collectionManager.getCollectionByName(deposit.getCollectionId());
 
-        assertTempDirHasEnoughDiskspaceMarginForFile(path.getParent(), filesize);
+        filesystemSpaceVerifier.assertDirHasEnoughDiskspaceMarginForFile(path.getParent(), collection.getDiskSpaceMargin(), filesize);
 
         if (!DepositState.DRAFT.equals(deposit.getState())) {
             throw new DepositReadOnlyException(String.format("Deposit id %s is not in DRAFT state.", deposit.getId()));
@@ -237,7 +240,8 @@ public class DepositHandlerImpl implements DepositHandler {
     }
 
     @Override
-    public Deposit finalizeDeposit(String depositId) throws DepositNotFoundException, InvalidDepositException, InvalidPartialFileException, CollectionNotFoundException, IOException {
+    public Deposit finalizeDeposit(String depositId)
+        throws DepositNotFoundException, InvalidDepositException, InvalidPartialFileException, CollectionNotFoundException, IOException, NotEnoughDiskSpaceException {
         var deposit = getDeposit(depositId);
         var path = deposit.getPath();
         var depositor = userManager.getDepositorById(deposit.getDepositor());
@@ -247,8 +251,10 @@ public class DepositHandlerImpl implements DepositHandler {
         deposit.setStateDescription("Finalizing deposit");
         depositPropertiesManager.saveProperties(path, deposit);
 
+        var collection = collectionManager.getCollectionByName(deposit.getCollectionId());
+
         log.info("Extracting files for deposit {}", depositId);
-        bagExtractor.extractBag(path, deposit.getMimeType(), depositor.getFilepathMapping());
+        bagExtractor.extractBag(path, collection.getDiskSpaceMargin(), deposit.getMimeType(), depositor.getFilepathMapping());
 
         var bagDir = bagExtractor.getBagDir(path);
         log.info("Bag dir found, it is named {}", bagDir);
@@ -267,11 +273,32 @@ public class DepositHandlerImpl implements DepositHandler {
 
         removeZipFiles(path);
 
-        var collection = collectionManager.getCollectionByName(deposit.getCollectionId());
         var targetPath = getDepositPath(collection, depositId);
         fileService.move(path, targetPath);
 
         return deposit;
+    }
+
+    @Override
+    public void setDepositToInvalid(String depositId, String message) throws InvalidDepositException, DepositNotFoundException {
+        var deposit = getDeposit(depositId);
+        var path = deposit.getPath();
+
+        log.info("Marking deposit with id {} as INVALID; reason: {}", depositId, message);
+        deposit.setState(DepositState.INVALID);
+        deposit.setStateDescription(message);
+        depositPropertiesManager.saveProperties(path, deposit);
+    }
+
+    @Override
+    public void setDepositToRetrying(String depositId) throws InvalidDepositException, DepositNotFoundException {
+        var deposit = getDeposit(depositId);
+        var path = deposit.getPath();
+
+        log.info("Rescheduling deposit with id {}", depositId);
+        deposit.setState(DepositState.UPLOADED);
+        deposit.setStateDescription("Rescheduled, waiting for more disk space");
+        depositPropertiesManager.saveProperties(path, deposit);
     }
 
     private Stream<Path> getDepositFiles(Path path) throws IOException {
@@ -288,23 +315,6 @@ public class DepositHandlerImpl implements DepositHandler {
             catch (IOException e) {
                 log.warn("Unable to remove file {}", file, e);
             }
-        }
-    }
-
-    void assertTempDirHasEnoughDiskspaceMarginForFile(Path destination, long contentLength) throws IOException, NotEnoughDiskSpaceException {
-        if (contentLength > -1) {
-            var availableSpace = fileService.getAvailableDiskSpace(destination);
-            log.debug("Free space  = {}", availableSpace);
-            log.debug("File length = {}", contentLength);
-            log.debug("Margin      = {}", sword2Config.getDiskSpaceMargin());
-            log.debug("Extra space = {}", availableSpace - contentLength - sword2Config.getDiskSpaceMargin());
-
-            if (availableSpace - contentLength < sword2Config.getDiskSpaceMargin()) {
-                throw new NotEnoughDiskSpaceException("Not enough space available");
-            }
-        }
-        else {
-            log.debug("Content-length is -1, not checking for disk space margin");
         }
     }
 
