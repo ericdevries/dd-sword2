@@ -61,72 +61,12 @@ public class CollectionResourceImpl extends BaseHandler implements CollectionRes
 
     @Override
     public Response depositMultipart(MultiPart multiPart, String collectionId, HttpHeaders headers, Depositor depositor) {
-
-        String filename = null;
-        String hash = null;
-        String packaging = null;
-        long contentLength = -1;
-        String mimeType = null;
-        InputStream inputStream = null;
-
-        try {
-            var inProgress = getInProgress(headers.getHeaderString("in-progress"));
-
-            for (var part : multiPart.getBodyParts()) {
-                var name = part.getContentDisposition().getParameters().get("name");
-
-                if ("atom".equals(name)) {
-                    // TODO get atom part
-                    //                InputStream entryPart = item.getInputStream();
-                    //                Abdera abdera = new Abdera();
-                    //                Parser parser = abdera.getParser();
-                    //                Document<Entry> entryDoc = parser.parse(entryPart);
-                    //                Entry entry = entryDoc.getRoot();
-                    //                deposit.setEntry(entry);
-                }
-                else if ("payload".equals(name)) {
-                    filename = part.getContentDisposition().getFileName();
-                    hash = part.getHeaders().getFirst("content-md5");
-                    packaging = part.getHeaders().getFirst("packaging");
-                    contentLength = part.getContentDisposition().getSize();
-                    mimeType = "application/octet-stream";
-                    inputStream = part.getEntityAs(InputStream.class);
-
-                    if (part.getMediaType() != null) {
-                        mimeType = part.getMediaType().toString().split(";")[0];
-                    }
-                }
-
-                var deposit = depositHandler.createDepositWithPayload(collectionId, depositor, inProgress, MediaType.valueOf(mimeType), hash, packaging, filename, contentLength, inputStream);
-
-                var entry = depositReceiptFactory.createDepositReceipt(deposit);
-
-                return Response.status(Response.Status.CREATED)
-                    .header("Last-Modified", formatDateTime(deposit.getCreated()))
-                    .header("Content-MD5", "")
-                    .header("Location", depositReceiptFactory.getDepositLocation(deposit))
-                    .entity(entry).build();
-            }
-        }
-        catch (IOException | InvalidHeaderException | InvalidDepositException e) {
-            return buildSwordErrorResponse(UriRegistry.ERROR_BAD_REQUEST, e.getMessage());
-        }
-        catch (CollectionNotFoundException e) {
-            return buildSwordErrorResponse(UriRegistry.ERROR_METHOD_NOT_ALLOWED, e.getMessage());
-        }
-        catch (HashMismatchException e) {
-            return buildSwordErrorResponse(UriRegistry.ERROR_CHECKSUM_MISMATCH);
-        }
-        catch (NotEnoughDiskSpaceException e) {
-            throw new WebApplicationException(503);
-        }
-
-        return buildSwordErrorResponse(UriRegistry.ERROR_BAD_REQUEST, "Attempting to store and check deposit which has no input stream");
+        throw new WebApplicationException(Response.Status.NOT_IMPLEMENTED);
     }
 
     @Override
     public Response depositAtom(String collectionId, HttpHeaders headers, Depositor depositor) {
-        return null;
+        throw new WebApplicationException(Response.Status.NOT_IMPLEMENTED);
     }
 
     @Override

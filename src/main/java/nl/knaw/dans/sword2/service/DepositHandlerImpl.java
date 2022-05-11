@@ -19,7 +19,6 @@ import nl.knaw.dans.sword2.Deposit;
 import nl.knaw.dans.sword2.DepositState;
 import nl.knaw.dans.sword2.auth.Depositor;
 import nl.knaw.dans.sword2.config.CollectionConfig;
-import nl.knaw.dans.sword2.config.Sword2Config;
 import nl.knaw.dans.sword2.exceptions.CollectionNotFoundException;
 import nl.knaw.dans.sword2.exceptions.DepositNotFoundException;
 import nl.knaw.dans.sword2.exceptions.DepositReadOnlyException;
@@ -51,16 +50,14 @@ public class DepositHandlerImpl implements DepositHandler {
     private final BagExtractor bagExtractor;
     private final FileService fileService;
     private final DepositPropertiesManager depositPropertiesManager;
-    private final Sword2Config sword2Config;
     private final CollectionManager collectionManager;
     private final UserManager userManager;
     private final BlockingQueue<DepositFinalizerEvent> depositFinalizerQueue;
     private final BagItManager bagItManager;
     private final FilesystemSpaceVerifier filesystemSpaceVerifier;
 
-    public DepositHandlerImpl(Sword2Config sword2Config, BagExtractor bagExtractor, FileService fileService, DepositPropertiesManager depositPropertiesManager, CollectionManager collectionManager,
+    public DepositHandlerImpl(BagExtractor bagExtractor, FileService fileService, DepositPropertiesManager depositPropertiesManager, CollectionManager collectionManager,
         UserManager userManager, BlockingQueue<DepositFinalizerEvent> depositFinalizerQueue, BagItManager bagItManager, FilesystemSpaceVerifier filesystemSpaceVerifier) {
-        this.sword2Config = sword2Config;
         this.bagExtractor = bagExtractor;
         this.fileService = fileService;
         this.depositPropertiesManager = depositPropertiesManager;

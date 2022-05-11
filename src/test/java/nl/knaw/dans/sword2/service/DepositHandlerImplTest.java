@@ -105,7 +105,7 @@ class DepositHandlerImplTest {
 
         createDepositFrom("audiences.zip", "testid", DepositState.DRAFT);
 
-        var depositHandler = new DepositHandlerImpl(config,
+        var depositHandler = new DepositHandlerImpl(
             bagExtractor,
             fileService,
             depositPropertiesManager, collectionManager, userManager, queue, bagItManager, filesystemSpaceVerifier);
