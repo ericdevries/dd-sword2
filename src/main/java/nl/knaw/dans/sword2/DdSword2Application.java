@@ -96,6 +96,7 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
         var depositFinalizerManager = new DepositFinalizerManager(finalizingExecutor, depositHandler, queue, rescheduleExecutor, configuration.getSword2().getRescheduleDelay());
 
         environment.jersey().register(MultiPartFeature.class);
+
         // Set up authentication
         environment.jersey().register(
             new AuthDynamicFeature(new BasicCredentialAuthFilter.Builder<Depositor>().setAuthenticator(new SwordAuthenticator(configuration.getUsers())).setRealm("SWORD2").buildAuthFilter()));
@@ -105,7 +106,6 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
 
         // Managed classes
         environment.lifecycle().manage(depositFinalizerManager);
-
         environment.jersey().register(HashHeaderInterceptor.class);
 
         // Resources

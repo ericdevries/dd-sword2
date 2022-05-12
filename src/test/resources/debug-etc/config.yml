@@ -28,13 +28,14 @@ sword2:
       deposits: data/tmp/1/deposits
       autoClean:
         - REJECTED
+      diskSpaceMargin: 2G
     - name: 'collection2'
       path: '2'
       uploads: data/tmp/2/uploads
       deposits: data/tmp/2/deposits
       autoClean:
         - REJECTED
-  diskSpaceMargin: 2G
+      diskSpaceMargin: 2G
   rescheduleDelay: PT30S
   finalizingQueue:
     nameFormat: "finalization-worker-%d"
@@ -45,7 +46,15 @@ sword2:
     maxThreads: 5
     # Threads will die after 60 seconds of idleness
     keepAliveTime: 60 seconds
-
+  rescheduleQueue:
+    nameFormat: "finalization-worker-%d"
+    maxQueueSize: 5000
+    # Number of threads will be increased when maxQueueSize is exceeded.
+    minThreads: 2
+    # No more than maxThreads will be created though
+    maxThreads: 5
+    # Threads will die after 60 seconds of idleness
+    keepAliveTime: 60 seconds
 
 #
 # See https://www.dropwizard.io/en/latest/manual/configuration.html#logging

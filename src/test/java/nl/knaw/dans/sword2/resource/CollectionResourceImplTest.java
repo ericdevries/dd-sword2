@@ -15,24 +15,16 @@
  */
 package nl.knaw.dans.sword2.resource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import io.dropwizard.testing.ResourceHelpers;
 import io.dropwizard.testing.junit5.DropwizardAppExtension;
 import io.dropwizard.testing.junit5.DropwizardExtensionsSupport;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation.Builder;
-import javax.ws.rs.core.MediaType;
-import javax.xml.bind.JAXBException;
 import nl.knaw.dans.sword2.DdSword2Application;
 import nl.knaw.dans.sword2.DdSword2Configuration;
 import nl.knaw.dans.sword2.api.entry.Entry;
+import nl.knaw.dans.sword2.api.error.Error;
 import nl.knaw.dans.sword2.api.statement.Feed;
+import nl.knaw.dans.sword2.core.service.ChecksumCalculator;
+import nl.knaw.dans.sword2.core.service.ChecksumCalculatorImpl;
 import nl.knaw.dans.sword2.core.service.FileServiceImpl;
 import org.apache.commons.configuration2.FileBasedConfiguration;
 import org.apache.commons.configuration2.PropertiesConfiguration;
@@ -48,6 +40,24 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.Invocation.Builder;
+import javax.ws.rs.core.MediaType;
+import javax.xml.bind.DatatypeConverter;
+import javax.xml.bind.JAXBException;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.Locale;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 @ExtendWith(DropwizardExtensionsSupport.class)
 class CollectionResourceImplTest {
 
@@ -56,6 +66,8 @@ class CollectionResourceImplTest {
         ResourceHelpers.resourceFilePath("debug-etc/config.yml")
     );
 
+    private final ChecksumCalculator checksumCalculator = new ChecksumCalculatorImpl();
+
     @BeforeEach
     void startUp() throws IOException {
         new FileServiceImpl().ensureDirectoriesExist(Path.of("data/tmp/1"));
@@ -63,8 +75,7 @@ class CollectionResourceImplTest {
 
     @AfterEach
     void tearDown() throws IOException {
-        FileUtils.deleteDirectory(Path.of("data/tmp")
-            .toFile());
+        FileUtils.deleteDirectory(Path.of("data/tmp").toFile());
     }
 
     Builder buildRequest(String path) {
@@ -111,64 +122,84 @@ class CollectionResourceImplTest {
         assertEquals("DRAFT", config.getString("state.label"));
         assertEquals("user001", config.getString("depositor.userId"));
         assertEquals("Deposit is open for additional data", config.getString("state.description"));
-        //assertEquals("AUDIENCE", config.getString("bag-store.bag-name"));
 
         var statusResult = buildRequest("/statement/" + id)
             .get();
 
         var feed = statusResult.readEntity(Feed.class);
-
     }
 
     @Test
-    void testZipInParts() throws IOException, JAXBException, ConfigurationException {
+    void testZipInParts() throws IOException, ConfigurationException, NoSuchAlgorithmException, InterruptedException {
         var path = getClass().getResource("/zips/audiences.zip");
-        var url = String.format("http://localhost:%s/collection/1", EXT.getLocalPort());
-
         assert path != null;
 
+        var bytes = path.openStream().readAllBytes();
+        var bagSize = bytes.length / 3;
+        var firstPart = Arrays.copyOfRange(bytes, 0, bagSize);
+
+        var checksum = md5Checksum(firstPart);
         var result = buildRequest("/collection/1")
-            .header("content-type", "application/zip")
-            .header("content-md5", "bc27e20467a773501a4ae37fb85a9c3f")
-            .header("content-disposition", "attachment; filename=bag.zip")
+            .header("content-type", "application/octet-stream")
+            .header("content-md5", checksum)
+            .header("content-disposition", "attachment; filename=bag.zip.1")
             .header("in-progress", "true")
-            .post(Entity.entity(path.openStream(), MediaType.valueOf("application/zip")));
+            .post(Entity.entity(firstPart, MediaType.valueOf("application/octet-stream")));
 
         assertEquals(201, result.getStatus());
 
         var receipt = result.readEntity(Entry.class);
-        var parts = receipt.getId()
-            .split("/");
+        var parts = receipt.getId().split("/");
         var id = parts[parts.length - 1];
-        var firstPath = Path.of("data/tmp/1/uploads/", id);
 
+        var secondPart = Arrays.copyOfRange(bytes, bagSize, bagSize * 2);
+        var checksum2 = md5Checksum(secondPart);
+        var result2 = buildRequest("/container/" + id)
+            .header("content-type", "application/octet-stream")
+            .header("content-md5", checksum2)
+            .header("content-disposition", "attachment; filename=bag.zip.2")
+            .header("in-progress", "true")
+            .post(Entity.entity(secondPart, MediaType.valueOf("application/octet-stream")));
+        assertEquals(200, result2.getStatus());
+
+        var thirdPart = Arrays.copyOfRange(bytes, bagSize * 2, bytes.length);
+        var checksum3 = md5Checksum(thirdPart);
+
+        var result3 = buildRequest("/container/" + id)
+            .header("content-type", "application/octet-stream")
+            .header("content-md5", checksum3)
+            .header("content-disposition", "attachment; filename=bag.zip.3")
+            .header("in-progress", "false")
+            .post(Entity.entity(thirdPart, MediaType.valueOf("application/zip")));
+        assertEquals(200, result3.getStatus());
+
+        var count = 0;
+        var state = "";
+
+        // waiting at most 5 seconds for the background thread to handle this
+        while (count < 5) {
+            var statement = buildRequest("/statement/" + id).get(Feed.class);
+            state = statement.getCategory().getTerm();
+
+            if (state.equals("SUBMITTED")) {
+                break;
+            }
+            Thread.sleep(1000);
+            count += 1;
+        }
+
+        assertEquals("SUBMITTED", state);
+
+        var firstPath = Path.of("data/tmp/1/deposits/", id);
         assertTrue(Files.exists(firstPath.resolve("deposit.properties")));
-        assertTrue(Files.exists(firstPath.resolve("bag.zip")));
-
-        var config = getProperties(firstPath);
-
-        assertNotNull(config.getString("bag-store.bag-id"));
-        assertNotNull(config.getString("dataverse.bag-id"));
-        assertNotNull(config.getString("creation.timestamp"));
-        assertEquals("SWORD2", config.getString("deposit.origin"));
-        assertEquals("DRAFT", config.getString("state.label"));
-        //        assertNotNull(config.getString("deposit.userId"));
-        assertEquals("Deposit is open for additional data", config.getString("state.description"));
-        //        assertEquals("AUDIENCE", config.getString("bag-store.bag-name"));
-
-        var statementUrl = String.format("http://localhost:%s/statement/%s", EXT.getLocalPort(),
-            parts[parts.length - 1]);
-
-        var statusResult = buildRequest("/statement/" + parts[parts.length - 1])
-            .get();
-
-        var feed = statusResult.readEntity(Feed.class);
-
+        assertTrue(Files.exists(firstPath.resolve("audiences/bagit.txt")));
+        assertFalse(Files.exists(firstPath.resolve("bag.zip.1")));
+        assertFalse(Files.exists(firstPath.resolve("bag.zip.2")));
+        assertFalse(Files.exists(firstPath.resolve("bag.zip.3")));
     }
 
     @Test
-    void testZipDepositUploaded()
-        throws IOException, JAXBException, ConfigurationException, InterruptedException {
+    void testZipDepositUploaded() throws IOException, ConfigurationException, InterruptedException {
         var path = getClass().getResource("/zips/audiences.zip");
 
         assert path != null;
@@ -183,8 +214,7 @@ class CollectionResourceImplTest {
         assertEquals(201, result.getStatus());
 
         var receipt = result.readEntity(Entry.class);
-        var parts = receipt.getId()
-            .split("/");
+        var parts = receipt.getId().split("/");
         var id = parts[parts.length - 1];
 
         var count = 0;
@@ -192,7 +222,6 @@ class CollectionResourceImplTest {
 
         // waiting at most 5 seconds for the background thread to handle this
         while (count < 5) {
-
             var statement = buildRequest("/statement/" + id)
                 .get(Feed.class);
 
@@ -223,36 +252,61 @@ class CollectionResourceImplTest {
     }
 
     @Test
-    void testMultipartZipFile() throws IOException {
+    void testInvalidHash() throws IOException {
+        var path = getClass().getResource("/zips/audiences.zip");
+
+        assert path != null;
+
+        var result = buildRequest("/collection/1")
+            .header("content-type", "application/zip")
+            .header("content-md5", "invalid_hash")
+            .header("in-progress", "false")
+            .header("content-disposition", "attachment; filename=bag.zip")
+            .post(Entity.entity(path.openStream(), MediaType.valueOf("application/zip")));
+
+        assertEquals(412, result.getStatus());
+
+        var error = result.readEntity(Error.class);
+        assertEquals("ERROR", error.getTitle());
+        assertEquals("Processing failed", error.getTreatment());
+        assertEquals("http://purl.org/net/sword/error/ErrorChecksumMismatch", error.getSummary());
+    }
+
+    @Test
+    void testMultipartZipFileNotImplemented() throws IOException {
         var path = getClass().getResource("/zips/audiences.zip");
         assert path != null;
 
         var multiPart = new MultiPart();
         var payloadPart = new BodyPart(MediaType.valueOf("application/zip"));
-        payloadPart.getHeaders()
-            .add("content-disposition", "attachment; filename=bag.zip; name=payload");
-        payloadPart.getHeaders()
-            .add("content-md5", "bc27e20467a773501a4ae37fb85a9c3f");
-        payloadPart.getHeaders()
-            .add("packaging", "http://purl.org/net/sword/package/BagIt");
+        payloadPart.getHeaders().add("content-disposition", "attachment; filename=bag.zip; name=payload");
+        payloadPart.getHeaders().add("content-md5", "bc27e20467a773501a4ae37fb85a9c3f");
+        payloadPart.getHeaders().add("packaging", "http://purl.org/net/sword/package/BagIt");
         payloadPart.entity(path.openStream());
 
         multiPart.bodyPart(payloadPart);
         multiPart.setMediaType(MediaType.valueOf("multipart/related"));
-
-        var url = String.format("http://localhost:%s/collection/1", EXT.getLocalPort());
 
         var result = buildRequest("/collection/1")
             .header("content-length", 1000)
             .header("in-progress", "true")
             .post(Entity.entity(multiPart, multiPart.getMediaType()));
 
-        assertEquals(201, result.getStatus());
-        var receipt = result.readEntity(Entry.class);
-        var parts = receipt.getId()
-            .split("/");
-        var id = parts[parts.length - 1];
-        var firstPath = Path.of("data/tmp/1/uploads/", id);
+        assertEquals(501, result.getStatus());
+    }
+
+    @Test
+    void testAtomFileNotImplemented() throws IOException {
+        var path = getClass().getResource("/zips/audiences.zip");
+        assert path != null;
+
+        var result = buildRequest("/collection/1")
+            .header("content-length", 1000)
+            .header("in-progress", "true")
+            .header("content-type", "application/atom+xml")
+            .post(Entity.entity(path.openStream(), MediaType.valueOf("application/atom+xml")));
+
+        assertEquals(501, result.getStatus());
     }
 
     FileBasedConfiguration getProperties(Path path) throws ConfigurationException {
@@ -266,5 +320,13 @@ class CollectionResourceImplTest {
             paramConfig);
 
         return builder.getConfiguration();
+    }
+
+    String md5Checksum(byte[] parts) throws NoSuchAlgorithmException {
+        var md = MessageDigest.getInstance("MD5");
+        md.update(parts);
+
+        return DatatypeConverter.printHexBinary(md.digest())
+            .toLowerCase(Locale.ROOT);
     }
 }

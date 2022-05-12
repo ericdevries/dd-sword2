@@ -15,12 +15,10 @@
  */
 package nl.knaw.dans.sword2.core.service;
 
-import java.time.format.DateTimeFormatter;
-import nl.knaw.dans.sword2.core.Deposit;
-import nl.knaw.dans.sword2.core.DepositState;
 import nl.knaw.dans.sword2.auth.Depositor;
 import nl.knaw.dans.sword2.config.CollectionConfig;
-import nl.knaw.dans.sword2.core.finalizer.DepositFinalizerEvent;
+import nl.knaw.dans.sword2.core.Deposit;
+import nl.knaw.dans.sword2.core.DepositState;
 import nl.knaw.dans.sword2.core.exceptions.CollectionNotFoundException;
 import nl.knaw.dans.sword2.core.exceptions.DepositNotFoundException;
 import nl.knaw.dans.sword2.core.exceptions.DepositReadOnlyException;
@@ -28,6 +26,7 @@ import nl.knaw.dans.sword2.core.exceptions.HashMismatchException;
 import nl.knaw.dans.sword2.core.exceptions.InvalidDepositException;
 import nl.knaw.dans.sword2.core.exceptions.InvalidPartialFileException;
 import nl.knaw.dans.sword2.core.exceptions.NotEnoughDiskSpaceException;
+import nl.knaw.dans.sword2.core.finalizer.DepositFinalizerEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +35,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -75,42 +75,59 @@ public class DepositHandlerImpl implements DepositHandler {
 
         var id = UUID.randomUUID().toString();
         var collection = collectionManager.getCollectionByPath(collectionId, depositor);
-
-        // make sure the upload directory exists
-        fileService.ensureDirectoriesExist(collection.getUploads());
-        filesystemSpaceVerifier.assertDirHasEnoughDiskspaceMarginForFile(collection.getUploads(), collection.getDiskSpaceMargin(), filesize);
-
         var path = collection.getUploads().resolve(id).resolve(filename);
         var depositFolder = path.getParent();
 
-        // check if the hash matches the one provided by the user
-        var calculatedHash = fileService.copyFileWithMD5Hash(inputStream, path);
+        try {
+            // make sure the upload directory exists
+            fileService.ensureDirectoriesExist(collection.getUploads());
+            filesystemSpaceVerifier.assertDirHasEnoughDiskspaceMarginForFile(collection.getUploads(), collection.getDiskSpaceMargin(), filesize);
 
-        if (hash == null || !hash.equals(calculatedHash)) {
-            throw new HashMismatchException(String.format("Hash %s does not match expected hash %s", calculatedHash, hash));
+            // check if the hash matches the one provided by the user
+            var calculatedHash = fileService.copyFileWithMD5Hash(inputStream, path);
+
+            if (hash == null || !hash.equals(calculatedHash)) {
+                throw new HashMismatchException(String.format("Hash %s does not match expected hash %s", calculatedHash, hash));
+            }
+
+            var deposit = new Deposit();
+            deposit.setId(id);
+            deposit.setCollectionId(collection.getName());
+            deposit.setInProgress(inProgress);
+            deposit.setFilename(filename);
+            deposit.setMd5(calculatedHash);
+            deposit.setPackaging(packaging);
+            deposit.setContentLength(filesize);
+            deposit.setDepositor(depositor.getName());
+            deposit.setState(DepositState.DRAFT);
+            deposit.setStateDescription("Deposit is open for additional data");
+            deposit.setCreated(OffsetDateTime.now());
+            deposit.setMimeType(contentType.toString());
+
+            // now store these properties
+            // set state to draft
+            depositPropertiesManager.saveProperties(depositFolder, deposit);
+
+            startFinalizingDeposit(deposit);
+
+            return deposit;
         }
+        catch (HashMismatchException | IOException | InvalidDepositException e) {
+            // cleanup files
+            cleanupFile(path);
+            throw e;
+        }
+    }
 
-        var deposit = new Deposit();
-        deposit.setId(id);
-        deposit.setCollectionId(collection.getName());
-        deposit.setInProgress(inProgress);
-        deposit.setFilename(filename);
-        deposit.setMd5(calculatedHash);
-        deposit.setPackaging(packaging);
-        deposit.setContentLength(filesize);
-        deposit.setDepositor(depositor.getName());
-        deposit.setState(DepositState.DRAFT);
-        deposit.setStateDescription("Deposit is open for additional data");
-        deposit.setCreated(OffsetDateTime.now());
-        deposit.setMimeType(contentType.toString());
+    void cleanupFile(Path path) {
+        log.info("Cleaning up file {}", path);
 
-        // now store these properties
-        // set state to draft
-        depositPropertiesManager.saveProperties(depositFolder, deposit);
-
-        startFinalizingDeposit(deposit);
-
-        return deposit;
+        try {
+            fileService.deleteFile(path);
+        }
+        catch (IOException e) {
+            log.error("Unable to clean up file {}", path, e);
+        }
     }
 
     @Override
@@ -223,6 +240,8 @@ public class DepositHandlerImpl implements DepositHandler {
             return;
         }
 
+        log.info("Finalizing deposit with id {}", deposit.getId());
+
         var collection = collectionManager.getCollectionByName(deposit.getCollectionId());
         var path = getUploadPath(collection, deposit.getId());
 
@@ -264,12 +283,10 @@ public class DepositHandlerImpl implements DepositHandler {
 
             deposit.setState(DepositState.SUBMITTED);
             deposit.setStateDescription("Deposit is valid and ready for post-submission processing");
-            deposit.setBagName(bagDir.getFileName()
-                .toString());
+            deposit.setBagName(bagDir.getFileName().toString());
             deposit.setMimeType(null);
 
-            var metadata = bagItManager.getBagItMetaData(path.resolve(deposit.getBagName()),
-                depositId);
+            var metadata = bagItManager.getBagItMetaData(path.resolve(deposit.getBagName()),depositId);
             deposit.setSwordToken(metadata.getSwordToken());
             deposit.setOtherId(metadata.getOtherId());
             deposit.setOtherIdVersion(metadata.getOtherIdVersion());
@@ -282,18 +299,20 @@ public class DepositHandlerImpl implements DepositHandler {
             fileService.move(path, targetPath);
 
             return deposit;
-        } catch (InvalidDepositException e) {
+        }
+        catch (InvalidDepositException e) {
             setDepositToInvalid(depositId, e.getMessage());
             throw e;
-        } catch (InvalidPartialFileException | CollectionNotFoundException e) {
+        }
+        catch (InvalidPartialFileException | CollectionNotFoundException e) {
             setDepositToFailed(depositId, getGenericErrorMessage(depositId));
             throw e;
-        } catch (NotEnoughDiskSpaceException e) {
+        }
+        catch (NotEnoughDiskSpaceException e) {
             setDepositToRetrying(depositId);
             throw e;
         }
     }
-
 
     String getGenericErrorMessage(String depositId) {
         var timestamp = OffsetDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);

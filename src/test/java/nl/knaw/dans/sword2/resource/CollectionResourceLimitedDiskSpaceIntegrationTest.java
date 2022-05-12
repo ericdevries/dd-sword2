@@ -1,0 +1,64 @@
+package nl.knaw.dans.sword2.resource;
+
+import io.dropwizard.testing.ResourceHelpers;
+import io.dropwizard.testing.junit5.DropwizardAppExtension;
+import io.dropwizard.testing.junit5.DropwizardExtensionsSupport;
+import nl.knaw.dans.sword2.DdSword2Application;
+import nl.knaw.dans.sword2.DdSword2Configuration;
+import nl.knaw.dans.sword2.core.service.FileServiceImpl;
+import org.apache.commons.io.FileUtils;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.Invocation;
+import javax.ws.rs.core.MediaType;
+import java.io.IOException;
+import java.nio.file.Path;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@ExtendWith(DropwizardExtensionsSupport.class)
+public class CollectionResourceLimitedDiskSpaceIntegrationTest {
+
+    private static DropwizardAppExtension<DdSword2Configuration> EXT = new DropwizardAppExtension<>(DdSword2Application.class, ResourceHelpers.resourceFilePath("debug-etc/config-bigmargin.yml"));
+
+    @BeforeEach
+    void startUp() throws IOException {
+        new FileServiceImpl().ensureDirectoriesExist(Path.of("data/tmp/1"));
+    }
+
+    @AfterEach
+    void tearDown() throws IOException {
+        FileUtils.deleteDirectory(Path.of("data/tmp").toFile());
+    }
+
+    @Test
+    void testFileIsTooBig() throws IOException {
+        var path = getClass().getResource("/zips/audiences.zip");
+        assert path != null;
+
+        var result = buildRequest("/collection/1")
+            .header("content-type", "application/zip")
+            .header("content-md5", "bc27e20467a773501a4ae37fb85a9c3f")
+            .header("content-disposition", "attachment; filename=bag.zip")
+            .header("in-progress", "true")
+            .post(Entity.entity(path.openStream(), MediaType.valueOf("application/zip")));
+
+        assertEquals(503, result.getStatus());
+
+    }
+
+    Invocation.Builder buildRequest(String path) {
+        var url = String.format("http://localhost:%s%s", EXT.getLocalPort(), path);
+
+        return EXT.client()
+            .target(url)
+            .register(MultiPartFeature.class)
+            .request()
+            .header("authorization", "Basic dXNlcjAwMTp1c2VyMDAx");
+    }
+}

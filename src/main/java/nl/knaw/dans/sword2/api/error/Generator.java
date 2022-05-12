@@ -54,4 +54,12 @@ public class Generator {
     public void setVersion(String version) {
         this.version = version;
     }
+
+    @Override
+    public String toString() {
+        return "Generator{" +
+            "uri=" + uri +
+            ", version='" + version + '\'' +
+            '}';
+    }
 }

@@ -87,4 +87,15 @@ public class Error {
         this.summary = summary;
     }
 
+    @Override
+    public String toString() {
+        return "Error{" +
+            "title='" + title + '\'' +
+            ", updated='" + updated + '\'' +
+            ", generator=" + generator +
+            ", treatment='" + treatment + '\'' +
+            ", summary='" + summary + '\'' +
+            ", verboseDescription='" + verboseDescription + '\'' +
+            '}';
+    }
 }
