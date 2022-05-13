@@ -21,6 +21,7 @@ import gov.loc.repository.bagit.exceptions.MaliciousPathException;
 import gov.loc.repository.bagit.exceptions.UnparsableVersionException;
 import gov.loc.repository.bagit.exceptions.UnsupportedAlgorithmException;
 import gov.loc.repository.bagit.reader.BagReader;
+import gov.loc.repository.bagit.verify.BagVerifier;
 import gov.loc.repository.bagit.writer.ManifestWriter;
 import nl.knaw.dans.sword2.core.exceptions.InvalidDepositException;
 import org.apache.commons.lang3.tuple.Pair;
@@ -143,13 +144,38 @@ public class BagItManagerImpl implements BagItManager {
         var originalFilePaths = writeFilePathMapping(bagDir, relativeFilePathMapping);
 
         // rewrite the manifest files to reference the renamed files
-        writePayloadManifestFiles(path, bagDir, relativeFilePathMapping);
+        writePayloadManifestFiles(bagDir, relativeFilePathMapping);
 
         // rewrite the tag manifest files
         writeTagManifestFiles(bagDir, originalFilePaths);
     }
 
-    void writePayloadManifestFiles(Path path, Path bagDir, Map<String, String> filePathMapping) throws IOException {
+    @Override
+    public void verifyBagItRepository(Path path) throws InvalidDepositException {
+        try {
+            var bagDir = getBagDir(path);
+            var bag = getBag(bagDir);
+            var ignoreHiddenFiles = true;
+            var verifier = new BagVerifier();
+
+            log.trace("Verifying bag is complete on path {}", bagDir);
+            verifier.isComplete(bag, ignoreHiddenFiles);
+
+            log.trace("Verifying bag is valid on path {}", bagDir);
+            verifier.isValid(bag, ignoreHiddenFiles);
+
+            if (BagVerifier.canQuickVerify(bag)) {
+                log.trace("Verifying bag can be quickly verified on path {}", bagDir);
+                BagVerifier.quicklyVerify(bag);
+            }
+
+        }
+        catch (Exception e) {
+            throw new InvalidDepositException(e.getMessage());
+        }
+    }
+
+    void writePayloadManifestFiles(Path bagDir, Map<String, String> filePathMapping) throws IOException {
         var files = getManifestFiles(bagDir);
 
         for (var file : files) {
@@ -158,6 +184,7 @@ public class BagItManagerImpl implements BagItManager {
             var outputContent = fileList.stream().map(this::formatFileOutput)
                 .collect(Collectors.joining("\n"));
 
+            log.trace("Writing new payload manifest to path {}: {}", file, outputContent);
             fileService.writeContentToFile(file, outputContent);
         }
     }
@@ -182,6 +209,7 @@ public class BagItManagerImpl implements BagItManager {
                 manifest.setFileToChecksumMap(newMap);
             }
 
+            log.trace("Writing new tag manifest to path {}: {}", path, bag.getTagManifests());
             ManifestWriter.writeTagManifests(bag.getTagManifests(), path, path, StandardCharsets.UTF_8);
         }
         catch (Exception e) {
@@ -199,6 +227,7 @@ public class BagItManagerImpl implements BagItManager {
         return data.stream().findFirst().orElse(defaultValue);
     }
 
+    @Override
     public Path getBagDir(Path path) throws IOException, InvalidDepositException {
         var files = fileService.listDirectories(path);
 

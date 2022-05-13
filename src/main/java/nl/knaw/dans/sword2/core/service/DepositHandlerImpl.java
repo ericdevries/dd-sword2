@@ -286,7 +286,7 @@ public class DepositHandlerImpl implements DepositHandler {
             deposit.setBagName(bagDir.getFileName().toString());
             deposit.setMimeType(null);
 
-            var metadata = bagItManager.getBagItMetaData(path.resolve(deposit.getBagName()),depositId);
+            var metadata = bagItManager.getBagItMetaData(path.resolve(deposit.getBagName()), depositId);
             deposit.setSwordToken(metadata.getSwordToken());
             deposit.setOtherId(metadata.getOtherId());
             deposit.setOtherIdVersion(metadata.getOtherIdVersion());
@@ -314,6 +314,35 @@ public class DepositHandlerImpl implements DepositHandler {
         }
     }
 
+    void cleanupDepositFiles(Deposit deposit, DepositState state) throws CollectionNotFoundException {
+        var collection = collectionManager.getCollectionByName(deposit.getCollectionId());
+
+        if (!collection.getAutoClean().contains(state)) {
+            log.trace("Cleanup for state {} is not allowed; only cleaning up for state(s) {}", state, collection.getAutoClean());
+            return;
+        }
+
+        log.info("Cleaning up zip files and bag directory for deposit {} due to state {}", deposit.getId(), deposit.getPath());
+
+        try {
+            removeZipFiles(deposit.getPath());
+
+            var directories = fileService.listDirectories(deposit.getPath());
+
+            for (var directory: directories) {
+                log.debug("Deleting directory {} because of state {}", directory, state);
+
+                try {
+                    fileService.deleteDirectory(directory);
+                } catch (IOException e) {
+                    log.error("Unable to delete directory {}", directory, e);
+                }
+            }
+        } catch (IOException e) {
+            log.error("Unable to clean path {} because of IOException", deposit.getPath(), e);
+        }
+    }
+
     String getGenericErrorMessage(String depositId) {
         var timestamp = OffsetDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
         // TODO fill this in
@@ -324,37 +353,52 @@ public class DepositHandlerImpl implements DepositHandler {
             + "The error occured at timestamp %s. Your 'DepositID' is %s", emailAddress, timestamp, depositId);
     }
 
-    @Override
-    public void setDepositToInvalid(String depositId, String message) throws InvalidDepositException, DepositNotFoundException {
+    void setDepositToInvalid(String depositId, String message) throws InvalidDepositException, DepositNotFoundException, CollectionNotFoundException {
         var deposit = getDeposit(depositId);
-        var path = deposit.getPath();
 
-        log.info("Marking deposit with id {} as INVALID; reason: {}", depositId, message);
-        deposit.setState(DepositState.INVALID);
-        deposit.setStateDescription(message);
-        depositPropertiesManager.saveProperties(path, deposit);
+        try {
+            var path = deposit.getPath();
+
+            log.info("Marking deposit with id {} as INVALID; reason: {}", depositId, message);
+            deposit.setState(DepositState.INVALID);
+            deposit.setStateDescription(message);
+            depositPropertiesManager.saveProperties(path, deposit);
+        }
+        finally {
+            cleanupDepositFiles(deposit, DepositState.INVALID);
+        }
     }
 
-    @Override
-    public void setDepositToRetrying(String depositId) throws InvalidDepositException, DepositNotFoundException {
+    void setDepositToRetrying(String depositId) throws InvalidDepositException, DepositNotFoundException, CollectionNotFoundException {
         var deposit = getDeposit(depositId);
-        var path = deposit.getPath();
 
-        log.info("Rescheduling deposit with id {}", depositId);
-        deposit.setState(DepositState.UPLOADED);
-        deposit.setStateDescription("Rescheduled, waiting for more disk space");
-        depositPropertiesManager.saveProperties(path, deposit);
+        try {
+            var path = deposit.getPath();
+
+            log.info("Rescheduling deposit with id {}", depositId);
+            deposit.setState(DepositState.UPLOADED);
+            deposit.setStateDescription("Rescheduled, waiting for more disk space");
+            depositPropertiesManager.saveProperties(path, deposit);
+        }
+        finally {
+            cleanupDepositFiles(deposit, DepositState.UPLOADED);
+        }
     }
 
-    void setDepositToFailed(String depositId, String message)
-        throws InvalidDepositException, DepositNotFoundException {
+    void setDepositToFailed(String depositId, String message) throws InvalidDepositException, DepositNotFoundException, CollectionNotFoundException {
         var deposit = getDeposit(depositId);
-        var path = deposit.getPath();
 
-        log.info("Marking deposit with id {} as FAILED; reason: {}", depositId, message);
-        deposit.setState(DepositState.FAILED);
-        deposit.setStateDescription(message);
-        depositPropertiesManager.saveProperties(path, deposit);
+        try {
+            var path = deposit.getPath();
+
+            log.info("Marking deposit with id {} as FAILED; reason: {}", depositId, message);
+            deposit.setState(DepositState.FAILED);
+            deposit.setStateDescription(message);
+            depositPropertiesManager.saveProperties(path, deposit);
+        }
+        finally {
+            cleanupDepositFiles(deposit, DepositState.FAILED);
+        }
     }
 
     private Stream<Path> getDepositFiles(Path path) throws IOException {
@@ -366,6 +410,7 @@ public class DepositHandlerImpl implements DepositHandler {
 
         for (var file : files) {
             try {
+                log.debug("Deleting zip file {}", file);
                 fileService.deleteFile(file);
             }
             catch (IOException e) {

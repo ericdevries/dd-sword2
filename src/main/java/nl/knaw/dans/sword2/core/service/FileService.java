@@ -52,4 +52,6 @@ public interface FileService {
     String readFile(Path item) throws IOException;
 
     List<String> readLines(Path file) throws IOException;
+
+    void deleteDirectory(Path directory) throws IOException;
 }

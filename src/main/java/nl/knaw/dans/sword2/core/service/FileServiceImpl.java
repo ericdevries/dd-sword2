@@ -15,6 +15,7 @@
  */
 package nl.knaw.dans.sword2.core.service;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -143,6 +144,11 @@ public class FileServiceImpl implements FileService {
     @Override
     public List<String> readLines(Path file) throws IOException {
         return Files.readAllLines(file);
+    }
+
+    @Override
+    public void deleteDirectory(Path directory) throws IOException {
+        FileUtils.deleteDirectory(directory.toFile());
     }
 
 }

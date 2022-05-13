@@ -22,7 +22,7 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 
-@XmlRootElement(name = "error")
+@XmlRootElement(name = "error", namespace = "http://purl.org/net/sword/terms/")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class Error {
 
@@ -32,11 +32,11 @@ public class Error {
     private String updated;
     @XmlElement(namespace = "http://www.w3.org/2005/Atom")
     private Generator generator;
-    @XmlElement
+    @XmlElement(namespace = "http://purl.org/net/sword/terms/")
     private String treatment;
     @XmlElement(namespace = "http://www.w3.org/2005/Atom")
     private String summary;
-    @XmlElement
+    @XmlElement(namespace = "http://purl.org/net/sword/terms/")
     private String verboseDescription;
 
     public String getVerboseDescription() {

@@ -26,4 +26,8 @@ public interface BagItManager {
     BagItMetaData getBagItMetaData(Path path, String depositId) throws InvalidDepositException;
 
     void updateManifests(Path path, Map<String, String> filePathMapping) throws IOException, InvalidDepositException;
+
+    void verifyBagItRepository(Path path) throws InvalidDepositException;
+
+    Path getBagDir(Path path) throws IOException, InvalidDepositException;
 }

@@ -28,6 +28,7 @@ sword2:
       deposits: data/tmp/1/deposits
       autoClean:
         - REJECTED
+        - INVALID
       diskSpaceMargin: 2G
     - name: 'collection2'
       path: '2'
@@ -35,6 +36,7 @@ sword2:
       deposits: data/tmp/2/deposits
       autoClean:
         - REJECTED
+        - INVALID
       diskSpaceMargin: 2G
   rescheduleDelay: PT30S
   finalizingQueue:

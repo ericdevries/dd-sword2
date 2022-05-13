@@ -136,11 +136,14 @@ public class BagExtractorImpl implements BagExtractor {
         var extractedSize = zipService.getExtractedSize(zipFile);
         filesystemSpaceVerifier.assertDirHasEnoughDiskspaceMarginForFile(zipFile.getParent(), diskSpaceMargin, extractedSize);
 
-
         log.debug("Extracting file {} to target {} with file path mapping set to {}", zipFile, target, filePathMapping);
         zipService.extractZipFileWithFileMapping(zipFile, target, filePathMapping);
 
+        log.debug("Updating bag manifests");
         bagItManager.updateManifests(target, filePathMapping);
+
+        log.debug("Verifying the bag is valid");
+        bagItManager.verifyBagItRepository(target);
     }
 
     Map<String, String> generateFilePathMapping(Path zipFile) throws IOException {

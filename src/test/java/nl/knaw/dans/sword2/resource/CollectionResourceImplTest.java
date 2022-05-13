@@ -56,6 +56,7 @@ import java.util.Locale;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(DropwizardExtensionsSupport.class)
@@ -66,10 +67,9 @@ class CollectionResourceImplTest {
         ResourceHelpers.resourceFilePath("debug-etc/config.yml")
     );
 
-    private final ChecksumCalculator checksumCalculator = new ChecksumCalculatorImpl();
-
     @BeforeEach
     void startUp() throws IOException {
+                FileUtils.deleteDirectory(Path.of("data/tmp").toFile());
         new FileServiceImpl().ensureDirectoriesExist(Path.of("data/tmp/1"));
     }
 
@@ -199,6 +199,56 @@ class CollectionResourceImplTest {
     }
 
     @Test
+    void testZipInPartsWithInvalidHash() throws IOException, ConfigurationException, NoSuchAlgorithmException, InterruptedException {
+        var path = getClass().getResource("/zips/audiences.zip");
+        assert path != null;
+
+        var bytes = path.openStream().readAllBytes();
+        var bagSize = bytes.length / 3;
+        var firstPart = Arrays.copyOfRange(bytes, 0, bagSize);
+
+        var checksum = md5Checksum(firstPart);
+        var result = buildRequest("/collection/1")
+            .header("content-type", "application/octet-stream")
+            .header("content-md5", checksum)
+            .header("content-disposition", "attachment; filename=bag.zip.1")
+            .header("in-progress", "true")
+            .post(Entity.entity(firstPart, MediaType.valueOf("application/octet-stream")));
+
+        assertEquals(201, result.getStatus());
+
+        var receipt = result.readEntity(Entry.class);
+        var parts = receipt.getId().split("/");
+        var id = parts[parts.length - 1];
+
+        var secondPart = Arrays.copyOfRange(bytes, bagSize, bagSize * 2);
+        var checksum2 = md5Checksum(secondPart);
+        var result2 = buildRequest("/container/" + id)
+            .header("content-type", "application/octet-stream")
+            .header("content-md5", checksum2)
+            .header("content-disposition", "attachment; filename=bag.zip.2")
+            .header("in-progress", "true")
+            .post(Entity.entity(secondPart, MediaType.valueOf("application/octet-stream")));
+        assertEquals(200, result2.getStatus());
+
+        var thirdPart = Arrays.copyOfRange(bytes, bagSize * 2, bytes.length);
+        var checksum3 = md5Checksum(thirdPart);
+
+        var result3 = buildRequest("/container/" + id)
+            .header("content-type", "application/octet-stream")
+            .header("content-md5", "invalid_checksum")
+            .header("content-disposition", "attachment; filename=bag.zip.3")
+            .header("in-progress", "false")
+            .post(Entity.entity(thirdPart, MediaType.valueOf("application/zip")));
+        assertEquals(412, result3.getStatus());
+
+        var firstPath = Path.of("data/tmp/1/uploads/", id);
+        assertTrue(Files.exists(firstPath.resolve("bag.zip.1")));
+        assertTrue(Files.exists(firstPath.resolve("bag.zip.2")));
+        assertTrue(Files.exists(firstPath.resolve("bag.zip.3")));
+    }
+
+    @Test
     void testZipDepositUploaded() throws IOException, ConfigurationException, InterruptedException {
         var path = getClass().getResource("/zips/audiences.zip");
 
@@ -251,6 +301,62 @@ class CollectionResourceImplTest {
 
     }
 
+
+    @Test
+    void testInvalidZipDepositUploaded() throws IOException, ConfigurationException, InterruptedException {
+        var path = getClass().getResource("/zips/invalid-sha1.zip");
+
+        assert path != null;
+
+        var result = buildRequest("/collection/1")
+            .header("content-type", "application/zip")
+            .header("content-md5", "db45b2cfeb223d35d25a6d5208b528db")
+            .header("in-progress", "false")
+            .header("content-disposition", "attachment; filename=bag.zip")
+            .post(Entity.entity(path.openStream(), MediaType.valueOf("application/zip")));
+
+        assertEquals(201, result.getStatus());
+
+        var receipt = result.readEntity(Entry.class);
+        var parts = receipt.getId().split("/");
+        var id = parts[parts.length - 1];
+
+        var count = 0;
+        var state = "";
+
+        // waiting at most 5 seconds for the background thread to handle this
+        while (count < 5) {
+            var statement = buildRequest("/statement/" + id)
+                .get(Feed.class);
+
+            state = statement.getCategory()
+                .getTerm();
+
+            if (state.equals("INVALID")) {
+                break;
+            }
+            Thread.sleep(1000);
+            count += 1;
+        }
+
+        assertEquals("INVALID", state);
+
+        var firstPath = Path.of("data/tmp/1/uploads/" + id);
+        var config = getProperties(firstPath);
+
+        assertNotNull(config.getString("bag-store.bag-id"));
+        assertNotNull(config.getString("dataverse.bag-id"));
+        assertNotNull(config.getString("creation.timestamp"));
+        assertEquals("SWORD2", config.getString("deposit.origin"));
+        assertEquals("INVALID", config.getString("state.label"));
+        assertEquals("user001", config.getString("depositor.userId"));
+        assertTrue(config.getString("state.description").contains("is suppose to have a [SHA-1] hash of"));
+        assertNull(config.getString("bag-store.bag-name"));
+
+        assertFalse(Files.exists(firstPath.resolve("bag.zip")));
+        assertFalse(Files.exists(firstPath.resolve("invalid-sha1")));
+    }
+
     @Test
     void testInvalidHash() throws IOException {
         var path = getClass().getResource("/zips/audiences.zip");
@@ -292,7 +398,7 @@ class CollectionResourceImplTest {
             .header("in-progress", "true")
             .post(Entity.entity(multiPart, multiPart.getMediaType()));
 
-        assertEquals(501, result.getStatus());
+        assertEquals(405, result.getStatus());
     }
 
     @Test
@@ -306,7 +412,7 @@ class CollectionResourceImplTest {
             .header("content-type", "application/atom+xml")
             .post(Entity.entity(path.openStream(), MediaType.valueOf("application/atom+xml")));
 
-        assertEquals(501, result.getStatus());
+        assertEquals(405, result.getStatus());
     }
 
     FileBasedConfiguration getProperties(Path path) throws ConfigurationException {

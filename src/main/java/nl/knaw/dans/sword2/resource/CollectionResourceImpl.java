@@ -60,12 +60,14 @@ public class CollectionResourceImpl extends BaseHandler implements CollectionRes
 
     @Override
     public Response depositMultipart(MultiPart multiPart, String collectionId, HttpHeaders headers, Depositor depositor) {
-        throw new WebApplicationException(Response.Status.NOT_IMPLEMENTED);
+        return buildSwordErrorResponse(UriRegistry.ERROR_METHOD_NOT_ALLOWED);
+//        throw new WebApplicationException(Response.Status.METHOD_NOT_ALLOWED);
     }
 
     @Override
     public Response depositAtom(String collectionId, HttpHeaders headers, Depositor depositor) {
-        throw new WebApplicationException(Response.Status.NOT_IMPLEMENTED);
+        return buildSwordErrorResponse(UriRegistry.ERROR_METHOD_NOT_ALLOWED);
+//        throw new WebApplicationException(Response.Status.METHOD_NOT_ALLOWED);
     }
 
     @Override
