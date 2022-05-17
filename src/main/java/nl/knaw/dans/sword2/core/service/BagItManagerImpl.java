@@ -15,6 +15,7 @@
  */
 package nl.knaw.dans.sword2.core.service;
 
+import gov.loc.repository.bagit.conformance.BagLinter;
 import gov.loc.repository.bagit.domain.Bag;
 import gov.loc.repository.bagit.exceptions.InvalidBagitFileFormatException;
 import gov.loc.repository.bagit.exceptions.MaliciousPathException;
@@ -164,14 +165,15 @@ public class BagItManagerImpl implements BagItManager {
             log.trace("Verifying bag is valid on path {}", bagDir);
             verifier.isValid(bag, ignoreHiddenFiles);
 
-            if (BagVerifier.canQuickVerify(bag)) {
-                log.trace("Verifying bag can be quickly verified on path {}", bagDir);
-                BagVerifier.quicklyVerify(bag);
-            }
-
+            // this causes issues with the payload-oxum verification in combination with total file size
+            // because the filepathmapping changes file size
+//            if (BagVerifier.canQuickVerify(bag)) {
+//                log.trace("Verifying bag can be quickly verified on path {}", bagDir);
+//                BagVerifier.quicklyVerify(bag);
+//            }
         }
         catch (Exception e) {
-            throw new InvalidDepositException(e.getMessage());
+            throw new InvalidDepositException(e.getMessage(), e);
         }
     }
 

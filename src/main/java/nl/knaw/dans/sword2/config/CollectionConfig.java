@@ -38,6 +38,20 @@ public class CollectionConfig {
     @NotNull
     @JsonDeserialize(converter = StringByteSizeConverter.class)
     private long diskSpaceMargin;
+
+    public CollectionConfig() {
+
+    }
+
+    public CollectionConfig(String name, String path, Path uploads, Path deposits, long diskSpaceMargin, List<DepositState> autoClean) {
+        this.name = name;
+        this.path = path;
+        this.uploads = uploads;
+        this.deposits = deposits;
+        this.diskSpaceMargin = diskSpaceMargin;
+        this.autoClean = autoClean;
+    }
+
     private List<DepositState> autoClean;
 
     public long getDiskSpaceMargin() {

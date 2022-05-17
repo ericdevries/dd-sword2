@@ -1,0 +1,35 @@
+<ddm:DDM
+        xmlns:dc="http://purl.org/dc/elements/1.1/"
+        xmlns:dcx-dai="http://easy.dans.knaw.nl/schemas/dcx/dai/"
+        xmlns:ddm="http://easy.dans.knaw.nl/schemas/md/ddm/"
+        xmlns:dcterms="http://purl.org/dc/terms/"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:id-type="http://easy.dans.knaw.nl/schemas/vocab/identifier-type/">
+    <ddm:profile>
+        <dc:title>A dataset that is under embargo until 2030</dc:title>
+        <dcterms:description>
+            This dataset makes use of the ddm:available field to put all files under embargo until a specified date.
+        </dcterms:description>
+        <dcx-dai:creatorDetails>
+            <dcx-dai:author>
+                <dcx-dai:titles></dcx-dai:titles>
+                <dcx-dai:initials>I</dcx-dai:initials>
+                <dcx-dai:insertions></dcx-dai:insertions>
+                <dcx-dai:surname>Lastname</dcx-dai:surname>
+                <dcx-dai:organization>
+                    <dcx-dai:name xml:lang="en">Example Org</dcx-dai:name>
+                </dcx-dai:organization>
+            </dcx-dai:author>
+        </dcx-dai:creatorDetails>
+        <ddm:created>2015-09-09</ddm:created>
+        <ddm:available>2030-01-01</ddm:available>
+        <ddm:audience>D23320</ddm:audience>
+        <ddm:accessRights>OPEN_ACCESS</ddm:accessRights>
+    </ddm:profile>
+    <ddm:dcmiMetadata>
+        <dcterms:hasVersion>1.1</dcterms:hasVersion>
+        <dcterms:modified>2019-03-18</dcterms:modified>
+        <dcterms:license xsi:type="dcterms:URI">http://opensource.org/licenses/MIT</dcterms:license>
+        <dcterms:rightsHolder>I Lastname</dcterms:rightsHolder>
+    </ddm:dcmiMetadata>
+</ddm:DDM>

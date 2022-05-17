@@ -1,0 +1,5 @@
+74d1c3beb5bac0678d6cda442bce3b33  bag-info.txt
+9e5ad981e0d29adc278f6a294b8c2aca  bagit.txt
+2f8425cac16827647dabae503d32846a  metadata/dataset.xml
+38c617235f36c2d6bdb9b80b03737a36  metadata/files.xml
+826120ec5ae625bbc74efc4356e987f9  manifest-sha1.txt

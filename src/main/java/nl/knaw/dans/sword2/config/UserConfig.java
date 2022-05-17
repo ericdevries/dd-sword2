@@ -19,6 +19,17 @@ import java.util.List;
 
 public class UserConfig {
 
+    public UserConfig() {
+
+    }
+
+    public UserConfig(String name, String passwordHash, Boolean filepathMapping, List<String> collections) {
+        this.name = name;
+        this.passwordHash = passwordHash;
+        this.filepathMapping = filepathMapping;
+        this.collections = collections;
+    }
+
     private String name;
     private String passwordHash;
     private Boolean filepathMapping;

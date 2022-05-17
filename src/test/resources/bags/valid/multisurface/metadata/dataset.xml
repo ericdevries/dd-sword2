@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<ddm:DDM xmlns:ddm="http://easy.dans.knaw.nl/schemas/md/ddm/" xmlns="http://easy.dans.knaw.nl/schemas/bag/metadata/files/" xmlns:abr="http://www.den.nl/standaard/166/Archeologisch-Basisregister/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcx-dai="http://easy.dans.knaw.nl/schemas/dcx/dai/" xmlns:dcx-gml="http://easy.dans.knaw.nl/schemas/dcx/gml/" xmlns:id-type="http://easy.dans.knaw.nl/schemas/vocab/identifier-type/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://easy.dans.knaw.nl/schemas/md/ddm/ https://easy.dans.knaw.nl/schemas/md/ddm/ddm.xsd">
+    <ddm:profile>
+        <dc:title>A dataset containing surfaces created with polygons</dc:title>
+        <dcterms:description xml:lang="en">A sample dataset that contains multisurface polygons in the ddm to create surfaces</dcterms:description>
+        <dcx-dai:creatorDetails>
+            <dcx-dai:organization>
+                <dcx-dai:name xml:lang="en">Data Archiving and Network Services</dcx-dai:name>
+                <dcx-dai:role>DataCurator</dcx-dai:role>
+            </dcx-dai:organization>
+        </dcx-dai:creatorDetails>
+        <ddm:created>2017-01-01T00:01:02+01:00</ddm:created>
+        <ddm:available>2017-01-01T00:01:02+01:00</ddm:available>
+        <ddm:audience>D37000</ddm:audience>
+        <ddm:accessRights>OPEN_ACCESS</ddm:accessRights>
+    </ddm:profile>
+    <ddm:dcmiMetadata>
+        <dcx-gml:spatial>
+            <MultiSurface xmlns="http://www.opengis.net/gml">
+                <name>A random surface with multiple polygons</name>
+                <surfaceMember>
+                    <Polygon srsName="http://www.opengis.net/def/crs/EPSG/0/4326">
+                        <description>A triangle between DANS, NWO and the railway station</description>
+                        <exterior>
+                            <LinearRing>
+                                <description>main surface</description>
+                                <posList>52.080741 4.345312 51.08071 4.34422 51.07913 5.34332 52.080741 5.345312 52.080741 4.345312</posList>
+                            </LinearRing>
+                        </exterior>
+                        <interior>
+                            <LinearRing>
+                                <description>hole in the surface</description>
+                                <posList>52.180542 4.444215 52.580450 4.344323 52.580357 4.844110 52.080542 4.844215 52.180542 4.444215</posList>
+                            </LinearRing>
+                        </interior>
+                    </Polygon>
+                </surfaceMember>
+                <surfaceMember>
+                    <Polygon srsName="http://www.opengis.net/def/crs/EPSG/0/4326">
+                        <description>secondary surface</description>
+                        <exterior>
+                            <LinearRing>
+                                <posList>62.080741 14.345312 61.08071 14.34422 61.07913 15.34332 62.080741 15.345312 62.080741 14.345312</posList>
+                            </LinearRing>
+                        </exterior>
+                    </Polygon>
+                </surfaceMember>
+            </MultiSurface>
+	</dcx-gml:spatial>
+        <ddm:references href="https://easy.dans.knaw.nl/ui/home">EASY front end</ddm:references>
+        <dcterms:spatial>Overbetuwe</dcterms:spatial>
+        <dc:subject>metaal</dc:subject>
+        <dc:subject>koperlegering</dc:subject>
+        <dcterms:temporal xsi:type="abr:ABRperiode">BRONSMB</dcterms:temporal>
+        <dcterms:temporal xsi:type="abr:ABRperiode">BRONSL</dcterms:temporal>
+        <dcterms:temporal>-1500 until -800</dcterms:temporal>
+        <dc:language xsi:type="dcterms:ISO639-2">eng</dc:language>
+        <dc:publisher xmlns:dc="http://purl.org/dc/terms/">DANS/KNAW</dc:publisher>
+        <dc:type xsi:type="dcterms:DCMIType" xmlns:dc="http://purl.org/dc/terms/">Dataset</dc:type>
+        <dc:format xsi:type="dcterms:IMT">image/jpeg</dc:format>
+        <dc:format xsi:type="dcterms:IMT">application/xml</dc:format>
+        <dcterms:license xsi:type="dcterms:URI">http://creativecommons.org/licenses/by-nc-sa/4.0/</dcterms:license>
+        <dcterms:rightsHolder>Rights Holder</dcterms:rightsHolder>
+    </ddm:dcmiMetadata>
+</ddm:DDM>
+

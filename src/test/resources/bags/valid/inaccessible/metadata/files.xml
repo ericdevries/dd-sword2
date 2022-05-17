@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<files xmlns:dcterms="http://purl.org/dc/terms/" xmlns="http://easy.dans.knaw.nl/schemas/bag/metadata/files/"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://easy.dans.knaw.nl/schemas/bag/metadata/files/ https://easy.dans.knaw.nl/schemas/bag/metadata/files/files.xsd">
+    <file filepath="data/random images/image01.png">
+        <dcterms:format>image/png</dcterms:format>
+        <accessibleToRights>NONE</accessibleToRights>
+    </file>
+    <file filepath="data/random images/image02.jpeg">
+        <dcterms:format>image/jpeg</dcterms:format>
+        <accessibleToRights>NONE</accessibleToRights>
+    </file>
+    <file filepath="data/random images/image03.jpeg">
+        <dcterms:format>image/jpeg</dcterms:format>
+        <accessibleToRights>NONE</accessibleToRights>
+    </file>
+    <file filepath="data/a/deeper/path/With some file.txt">
+        <dcterms:format>text/plain</dcterms:format>
+        <accessibleToRights>NONE</accessibleToRights>
+    </file>
+</files>

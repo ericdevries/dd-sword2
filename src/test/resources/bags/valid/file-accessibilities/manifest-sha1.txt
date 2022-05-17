@@ -1,0 +1,10 @@
+3f822b34089e1da7a490536e50c15a28c45ab4bb  data/visibilities/known.txt
+4ae4fb20ee161b8026a468160553e623dcea4914  data/random images/image02.jpeg
+f375ad2556c094df000af13f77e40716403fc62f  data/accessibilities/known.txt
+4f5ea58e1c7e617f2190f7d9cf33637bc14aae02  data/accessibilities/anonymous.txt
+0a66ea77834e337e28a043db6d6f3d745c944593  data/random images/image03.jpeg
+f100629544e98ad21503b04a276fe6185cb4e9d2  data/random images/image01.png
+d424a7651d651e8c512f18eadf7eaf86ccc84b2b  data/accessibilities/request.txt
+96e8d782cfe5eb770061ad58cc371488c8b63b1c  data/visibilities/anonymous.txt
+f750a66151421a62521be6495684fb8384cb4aa0  data/a/deeper/path/With some file.txt
+d632dba903a82d940aff3ef43d7c907439ec589b  data/visibilities/none.txt
