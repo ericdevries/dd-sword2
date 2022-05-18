@@ -123,14 +123,14 @@ public class ContainerResourceImpl extends BaseHandler implements ContainerResou
             return buildSwordErrorResponse(UriRegistry.ERROR_CHECKSUM_MISMATCH);
         }
         catch (NotEnoughDiskSpaceException e) {
-            throw new WebApplicationException(503);
+            throw new WebApplicationException(e, 503);
         }
         catch (DepositNotFoundException e) {
             // TODO find out how the specs deal with an unknown deposit
             throw new WebApplicationException(e, 404);
         }
         catch (InvalidDepositException e) {
-            throw new WebApplicationException(500);
+            throw new WebApplicationException(e, 500);
         }
     }
 

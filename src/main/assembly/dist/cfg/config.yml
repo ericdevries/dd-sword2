@@ -72,15 +72,15 @@ health:
   delayedShutdownHandlerEnabled: false
   initialOverallState: false
   healthChecks:
-    - name: diskspace
+    - name: DiskSpace
       critical: true
-    - name: uploaddepositonsamefilesystem
+    - name: UploadDepositIsOnSameFileSystem
       critical: true
-    - name: filesystempermissions
+    - name: FileSystemPermissions
       critical: true
-    - name: finalizerqueue
+    - name: FinalizerQueue
       critical: true
-    - name: finalizingexecutor
+    - name: FinalizingExecutor
       critical: true
-    - name: rescheduleexecutor
+    - name: RescheduleExecutor
       critical: true

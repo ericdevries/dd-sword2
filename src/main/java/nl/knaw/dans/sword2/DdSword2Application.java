@@ -131,11 +131,11 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
 
         // Health checks
         var collections = configuration.getSword2().getCollections();
-        environment.healthChecks().register("diskspace", new DiskSpaceHealthCheck(collections, filesystemSpaceVerifier));
-        environment.healthChecks().register("uploaddepositonsamefilesystem", new UploadDepositOnSameFileSystemHealthCheck(collections, fileService));
-        environment.healthChecks().register("filesystempermissions", new FileSystemPermissionHealthCheck(collections, fileService));
-        environment.healthChecks().register("finalizerqueue", new QueueHealthCheck(queue));
-        environment.healthChecks().register("finalizingexecutor", new ExecutorQueueHealthCheck(finalizingExecutor));
-        environment.healthChecks().register("rescheduleexecutor", new ExecutorQueueHealthCheck(rescheduleExecutor));
+        environment.healthChecks().register("DiskSpace", new DiskSpaceHealthCheck(collections, filesystemSpaceVerifier));
+        environment.healthChecks().register("UploadDepositIsOnSameFileSystem", new UploadDepositOnSameFileSystemHealthCheck(collections, fileService));
+        environment.healthChecks().register("FileSystemPermissions", new FileSystemPermissionHealthCheck(collections, fileService));
+        environment.healthChecks().register("FinalizerQueue", new QueueHealthCheck(queue));
+        environment.healthChecks().register("FinalizingExecutor", new ExecutorQueueHealthCheck(finalizingExecutor));
+        environment.healthChecks().register("RescheduleExecutor", new ExecutorQueueHealthCheck(rescheduleExecutor));
     }
 }
