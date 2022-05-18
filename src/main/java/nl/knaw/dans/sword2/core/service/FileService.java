@@ -25,8 +25,6 @@ public interface FileService {
 
     void ensureDirectoriesExist(Path directory) throws IOException;
 
-    long getFileSize(Path path);
-
     Path copyFile(InputStream inputStream, Path target) throws IOException;
 
     String copyFileWithMD5Hash(InputStream inputStream, Path target) throws IOException;
@@ -49,9 +47,9 @@ public interface FileService {
 
     Path writeContentToFile(Path path, String content) throws IOException;
 
-    String readFile(Path item) throws IOException;
-
     List<String> readLines(Path file) throws IOException;
 
     void deleteDirectory(Path directory) throws IOException;
+
+    boolean isSameFileSystem(Path ...paths) throws IOException;
 }

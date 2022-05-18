@@ -27,11 +27,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
@@ -46,11 +48,6 @@ public class FileServiceImpl implements FileService {
         if (!Files.exists(directory)) {
             Files.createDirectories(directory);
         }
-    }
-
-    @Override
-    public long getFileSize(Path path) {
-        return 0;
     }
 
     @Override
@@ -137,11 +134,6 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public String readFile(Path item) throws IOException {
-        return Files.readString(item);
-    }
-
-    @Override
     public List<String> readLines(Path file) throws IOException {
         return Files.readAllLines(file);
     }
@@ -149,6 +141,17 @@ public class FileServiceImpl implements FileService {
     @Override
     public void deleteDirectory(Path directory) throws IOException {
         FileUtils.deleteDirectory(directory.toFile());
+    }
+
+    @Override
+    public boolean isSameFileSystem(Path... paths) throws IOException {
+        var fileStores = new HashSet<FileStore>();
+
+        for (var path: paths) {
+            fileStores.add(Files.getFileStore(path));
+        }
+
+        return fileStores.size() == 1;
     }
 
 }

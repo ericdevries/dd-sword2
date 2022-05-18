@@ -42,6 +42,7 @@ import nl.knaw.dans.sword2.core.service.FilesystemSpaceVerifierImpl;
 import nl.knaw.dans.sword2.core.service.UserManagerImpl;
 import nl.knaw.dans.sword2.core.service.ZipServiceImpl;
 import nl.knaw.dans.sword2.health.DiskSpaceHealthCheck;
+import nl.knaw.dans.sword2.health.UploadDepositOnSameFileSystemHealthCheck;
 import nl.knaw.dans.sword2.resource.CollectionResourceImpl;
 import nl.knaw.dans.sword2.resource.ContainerResourceImpl;
 import nl.knaw.dans.sword2.resource.HashHeaderInterceptor;
@@ -127,5 +128,7 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
 
         // Health checks
         environment.healthChecks().register("diskspace", new DiskSpaceHealthCheck(configuration.getSword2().getCollections(), filesystemSpaceVerifier));
+
+        environment.healthChecks().register("uploaddepositonsamefilesystem", new UploadDepositOnSameFileSystemHealthCheck(configuration.getSword2().getCollections(), fileService));
     }
 }
