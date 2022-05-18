@@ -55,8 +55,7 @@ public class DiskSpaceHealthCheck extends HealthCheck {
         }
 
         if (errors.size() > 0) {
-            var builder = Result.builder()
-                .withMessage("One or more partitions do not have enough disk space left");
+            var builder = Result.builder().withMessage("One or more partitions do not have enough disk space left");
 
             for (var error : errors) {
                 builder.withDetail(error.getName(), error.toString());

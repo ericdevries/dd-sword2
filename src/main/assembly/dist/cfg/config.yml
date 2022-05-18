@@ -78,3 +78,9 @@ health:
       critical: true
     - name: filesystempermissions
       critical: true
+    - name: finalizerqueue
+      critical: true
+    - name: finalizingexecutor
+      critical: true
+    - name: rescheduleexecutor
+      critical: true

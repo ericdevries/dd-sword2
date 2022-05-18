@@ -72,3 +72,7 @@ logging:
     - type: file
       archive: false
       currentLogFilename: data/tmp/dd-sword2.log
+
+health:
+  delayedShutdownHandlerEnabled: false
+  initialOverallState: false
