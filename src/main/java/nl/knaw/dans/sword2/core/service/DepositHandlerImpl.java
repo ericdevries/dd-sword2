@@ -234,7 +234,6 @@ public class DepositHandlerImpl implements DepositHandler {
 
     void startFinalizingDeposit(Deposit deposit) throws CollectionNotFoundException, InvalidDepositException {
         // if deposit is not in progress
-        // set state to UPLOADED
         if (deposit.isInProgress()) {
             log.info("Deposit is still in progress, not finalizing");
             return;
@@ -245,6 +244,7 @@ public class DepositHandlerImpl implements DepositHandler {
         var collection = collectionManager.getCollectionByName(deposit.getCollectionId());
         var path = getUploadPath(collection, deposit.getId());
 
+        // set state to UPLOADED
         deposit.setState(DepositState.UPLOADED);
         depositPropertiesManager.saveProperties(path, deposit);
 

@@ -15,7 +15,6 @@
  */
 package nl.knaw.dans.sword2.core.service;
 
-import gov.loc.repository.bagit.conformance.BagLinter;
 import gov.loc.repository.bagit.domain.Bag;
 import gov.loc.repository.bagit.exceptions.InvalidBagitFileFormatException;
 import gov.loc.repository.bagit.exceptions.MaliciousPathException;
@@ -89,12 +88,8 @@ public class BagItManagerImpl implements BagItManager {
     }
 
     List<Pair<String, String>> parseManifestFile(Path path, Map<String, String> filePathMapping) throws IOException {
-        return fileService.readLines(path).stream()
-            .map(line -> line.split("\\s+", 2))
-            .filter(line -> line.length == 2)
-            .map(line -> Pair.of(line[0], line[1]))
-            .map(item -> Pair.of(item.getKey(), filePathMapping.getOrDefault(item.getValue(), item.getValue())))
-            .collect(Collectors.toList());
+        return fileService.readLines(path).stream().map(line -> line.split("\\s+", 2)).filter(line -> line.length == 2).map(line -> Pair.of(line[0], line[1]))
+            .map(item -> Pair.of(item.getKey(), filePathMapping.getOrDefault(item.getValue(), item.getValue()))).collect(Collectors.toList());
     }
 
     String formatFileOutput(Pair<String, String> pair) {
@@ -167,10 +162,10 @@ public class BagItManagerImpl implements BagItManager {
 
             // this causes issues with the payload-oxum verification in combination with total file size
             // because the filepathmapping changes file size
-//            if (BagVerifier.canQuickVerify(bag)) {
-//                log.trace("Verifying bag can be quickly verified on path {}", bagDir);
-//                BagVerifier.quicklyVerify(bag);
-//            }
+            //            if (BagVerifier.canQuickVerify(bag)) {
+            //                log.trace("Verifying bag can be quickly verified on path {}", bagDir);
+            //                BagVerifier.quicklyVerify(bag);
+            //            }
         }
         catch (Exception e) {
             throw new InvalidDepositException(e.getMessage(), e);
@@ -183,8 +178,7 @@ public class BagItManagerImpl implements BagItManager {
         for (var file : files) {
             var fileList = parseManifestFile(file, filePathMapping);
 
-            var outputContent = fileList.stream().map(this::formatFileOutput)
-                .collect(Collectors.joining("\n"));
+            var outputContent = fileList.stream().map(this::formatFileOutput).collect(Collectors.joining("\n"));
 
             log.trace("Writing new payload manifest to path {}: {}", file, outputContent);
             fileService.writeContentToFile(file, outputContent);

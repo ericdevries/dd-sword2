@@ -69,7 +69,7 @@ class CollectionResourceImplTest {
 
     @BeforeEach
     void startUp() throws IOException {
-                FileUtils.deleteDirectory(Path.of("data/tmp").toFile());
+        FileUtils.deleteDirectory(Path.of("data/tmp").toFile());
         new FileServiceImpl().ensureDirectoriesExist(Path.of("data/tmp/1"));
     }
 
@@ -301,7 +301,6 @@ class CollectionResourceImplTest {
 
     }
 
-
     @Test
     void testInvalidZipDepositUploaded() throws IOException, ConfigurationException, InterruptedException {
         var path = getClass().getResource("/zips/invalid-sha1.zip");
@@ -399,6 +398,48 @@ class CollectionResourceImplTest {
             .post(Entity.entity(multiPart, multiPart.getMediaType()));
 
         assertEquals(405, result.getStatus());
+    }
+
+    @Test
+    void testUnknownCollection() throws IOException {
+        var path = getClass().getResource("/zips/audiences.zip");
+
+        assert path != null;
+
+        var result = buildRequest("/collection/123")
+            .header("content-type", "application/zip")
+            .header("content-md5", "bc27e20467a773501a4ae37fb85a9c3f")
+            .header("content-disposition", "attachment; filename=bag.zip")
+            .header("in-progress", "true")
+            .post(Entity.entity(path.openStream(), MediaType.valueOf("application/zip")));
+
+        assertEquals(405, result.getStatus());
+
+        var error = result.readEntity(Error.class);
+        assertEquals("ERROR", error.getTitle());
+        assertEquals("Processing failed", error.getTreatment());
+        assertEquals("Collection with id 123 could not be found", error.getSummary());
+    }
+
+    @Test
+    void testInvalidHeader() throws IOException {
+        var path = getClass().getResource("/zips/audiences.zip");
+
+        assert path != null;
+
+        var result = buildRequest("/collection/123")
+            .header("content-type", "application/zip")
+            .header("content-md5", "bc27e20467a773501a4ae37fb85a9c3f")
+            .header("content-disposition", "attachment; filename=bag.zip")
+            .header("in-progress", "this is something else")
+            .post(Entity.entity(path.openStream(), MediaType.valueOf("application/zip")));
+
+        assertEquals(400, result.getStatus());
+
+        var error = result.readEntity(Error.class);
+        assertEquals("ERROR", error.getTitle());
+        assertEquals("Processing failed", error.getTreatment());
+        assertEquals("In-Progress header must be either 'true' or 'false'", error.getSummary());
     }
 
     @Test

@@ -17,8 +17,11 @@ package nl.knaw.dans.sword2.resource;
 
 import nl.knaw.dans.sword2.config.UriRegistry;
 import nl.knaw.dans.sword2.core.exceptions.InvalidHeaderException;
+import nl.knaw.dans.sword2.core.service.BagItManagerImpl;
 import nl.knaw.dans.sword2.core.service.ErrorResponseFactory;
 import org.apache.commons.fileupload.ParameterParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -26,6 +29,8 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class BaseHandler {
+    private static final Logger log = LoggerFactory.getLogger(BaseHandler.class);
+
     private final ErrorResponseFactory errorResponseFactory;
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss Z");
 
@@ -75,8 +80,8 @@ public class BaseHandler {
                 return Long.parseLong(header);
             }
         }
-        catch (NumberFormatException ignored) {
-
+        catch (NumberFormatException e) {
+            log.error("Invalid content-length header: {}", header, e);
         }
 
         return -1L;
