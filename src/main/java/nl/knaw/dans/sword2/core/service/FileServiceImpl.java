@@ -170,7 +170,7 @@ public class FileServiceImpl implements FileService {
         }
         finally {
             try {
-                Files.deleteIfExists(path.resolve(filename));
+                Files.deleteIfExists(filename);
             }
             catch (IOException e) {
                 log.error("Unable to delete file due to IO error", e);
