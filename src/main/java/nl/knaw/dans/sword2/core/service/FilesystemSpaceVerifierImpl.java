@@ -34,17 +34,26 @@ public class FilesystemSpaceVerifierImpl implements FilesystemSpaceVerifier {
     public void assertDirHasEnoughDiskspaceMarginForFile(Path destination, long margin, long contentLength) throws IOException, NotEnoughDiskSpaceException {
         if (contentLength > -1) {
             var availableSpace = fileService.getAvailableDiskSpace(destination);
-            log.debug("Free space  = {}", availableSpace);
-            log.debug("File length = {}", contentLength);
-            log.debug("Margin      = {}", margin);
-            log.debug("Extra space = {}", availableSpace - contentLength - margin);
+            log.trace("Free space  = {}", availableSpace);
+            log.trace("File length = {}", contentLength);
+            log.trace("Margin      = {}", margin);
+            log.trace("Extra space = {}", availableSpace - contentLength - margin);
 
             if (availableSpace - contentLength < margin) {
                 throw new NotEnoughDiskSpaceException("Not enough space available");
             }
         }
         else {
-            log.debug("Content-length is -1, not checking for disk space margin");
+            log.trace("Content-length is -1, not checking for disk space margin");
+        }
+    }
+
+    @Override
+    public void assertDirHasEnoughDiskspaceMargin(Path destination, long margin) throws IOException, NotEnoughDiskSpaceException {
+        var availableSpace = fileService.getAvailableDiskSpace(destination);
+
+        if (availableSpace < margin) {
+            throw new NotEnoughDiskSpaceException("Not enough space available");
         }
     }
 }

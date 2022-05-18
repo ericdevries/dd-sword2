@@ -21,15 +21,14 @@ import io.dropwizard.auth.AuthDynamicFeature;
 import io.dropwizard.auth.AuthValueFactoryProvider;
 import io.dropwizard.auth.basic.BasicCredentialAuthFilter;
 import io.dropwizard.forms.MultiPartBundle;
+import io.dropwizard.health.conf.HealthConfiguration;
+import io.dropwizard.health.core.HealthCheckBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import nl.knaw.dans.sword2.auth.Depositor;
 import nl.knaw.dans.sword2.auth.SwordAuthenticator;
-import nl.knaw.dans.sword2.resource.CollectionResourceImpl;
-import nl.knaw.dans.sword2.resource.ContainerResourceImpl;
-import nl.knaw.dans.sword2.resource.HashHeaderInterceptor;
-import nl.knaw.dans.sword2.resource.ServiceDocumentResourceImpl;
-import nl.knaw.dans.sword2.resource.StatementResourceImpl;
+import nl.knaw.dans.sword2.core.finalizer.DepositFinalizerEvent;
+import nl.knaw.dans.sword2.core.finalizer.DepositFinalizerManager;
 import nl.knaw.dans.sword2.core.service.BagExtractorImpl;
 import nl.knaw.dans.sword2.core.service.BagItManagerImpl;
 import nl.knaw.dans.sword2.core.service.ChecksumCalculatorImpl;
@@ -42,8 +41,12 @@ import nl.knaw.dans.sword2.core.service.FileServiceImpl;
 import nl.knaw.dans.sword2.core.service.FilesystemSpaceVerifierImpl;
 import nl.knaw.dans.sword2.core.service.UserManagerImpl;
 import nl.knaw.dans.sword2.core.service.ZipServiceImpl;
-import nl.knaw.dans.sword2.core.finalizer.DepositFinalizerEvent;
-import nl.knaw.dans.sword2.core.finalizer.DepositFinalizerManager;
+import nl.knaw.dans.sword2.health.DiskSpaceHealthCheck;
+import nl.knaw.dans.sword2.resource.CollectionResourceImpl;
+import nl.knaw.dans.sword2.resource.ContainerResourceImpl;
+import nl.knaw.dans.sword2.resource.HashHeaderInterceptor;
+import nl.knaw.dans.sword2.resource.ServiceDocumentResourceImpl;
+import nl.knaw.dans.sword2.resource.StatementResourceImpl;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 
 import java.util.concurrent.ArrayBlockingQueue;
@@ -61,9 +64,14 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
 
     @Override
     public void initialize(final Bootstrap<DdSword2Configuration> bootstrap) {
-        // TODO: application initialization
         bootstrap.addBundle(new MultiPartBundle());
+        bootstrap.addBundle(new HealthCheckBundle<>() {
 
+            @Override
+            protected HealthConfiguration getHealthConfiguration(final DdSword2Configuration configuration) {
+                return configuration.getHealthConfiguration();
+            }
+        });
     }
 
     @Override
@@ -116,5 +124,8 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
         environment.jersey().register(new StatementResourceImpl(configuration.getSword2().getBaseUrl(), depositHandler, errorResponseFactory));
 
         environment.jersey().register(new ServiceDocumentResourceImpl(configuration.getSword2().getCollections(), configuration.getSword2().getBaseUrl()));
+
+        // Health checks
+        environment.healthChecks().register("diskspace", new DiskSpaceHealthCheck(configuration.getSword2().getCollections(), filesystemSpaceVerifier));
     }
 }

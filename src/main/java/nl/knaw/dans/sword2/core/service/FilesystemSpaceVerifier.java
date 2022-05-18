@@ -22,4 +22,6 @@ import java.nio.file.Path;
 
 public interface FilesystemSpaceVerifier {
     void assertDirHasEnoughDiskspaceMarginForFile(Path destination, long margin, long contentLength) throws IOException, NotEnoughDiskSpaceException;
+
+    void assertDirHasEnoughDiskspaceMargin(Path destination, long margin) throws IOException, NotEnoughDiskSpaceException;
 }
