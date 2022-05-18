@@ -36,6 +36,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -68,7 +69,8 @@ public class FileServiceImpl implements FileService {
             return DatatypeConverter.printHexBinary(digest.digest())
                 .toLowerCase(Locale.ROOT);
 
-        } catch (NoSuchAlgorithmException e) {
+        }
+        catch (NoSuchAlgorithmException e) {
             // noop
         }
 
@@ -111,11 +113,12 @@ public class FileServiceImpl implements FileService {
     @Override
     public Path mergeFiles(List<Path> files, Path target) throws IOException {
         try (var output = new BufferedOutputStream(new FileOutputStream(target.toFile(), true))) {
-            for (var file: files) {
+            for (var file : files) {
                 IOUtils.copy(Files.newInputStream(file), output);
             }
-        } finally {
-            for (var file: files) {
+        }
+        finally {
+            for (var file : files) {
                 Files.deleteIfExists(file);
             }
         }
@@ -147,11 +150,32 @@ public class FileServiceImpl implements FileService {
     public boolean isSameFileSystem(Path... paths) throws IOException {
         var fileStores = new HashSet<FileStore>();
 
-        for (var path: paths) {
+        for (var path : paths) {
             fileStores.add(Files.getFileStore(path));
         }
 
         return fileStores.size() == 1;
+    }
+
+    @Override
+    public boolean canWriteTo(Path path) {
+        var filename = path.resolve(String.format(".%s", UUID.randomUUID()));
+
+        try {
+            Files.write(filename, new byte[] {});
+            return true;
+        }
+        catch (IOException e) {
+            return false;
+        }
+        finally {
+            try {
+                Files.deleteIfExists(path.resolve(filename));
+            }
+            catch (IOException e) {
+                log.error("Unable to delete file due to IO error", e);
+            }
+        }
     }
 
 }

@@ -76,4 +76,5 @@ health:
       critical: true
     - name: uploaddepositonsamefilesystem
       critical: true
-
+    - name: filesystempermissions
+      critical: true

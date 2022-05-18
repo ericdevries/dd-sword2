@@ -52,4 +52,6 @@ public interface FileService {
     void deleteDirectory(Path directory) throws IOException;
 
     boolean isSameFileSystem(Path ...paths) throws IOException;
+
+    boolean canWriteTo(Path path);
 }

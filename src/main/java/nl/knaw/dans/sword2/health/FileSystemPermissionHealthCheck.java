@@ -21,11 +21,11 @@ import nl.knaw.dans.sword2.core.service.FileService;
 
 import java.util.List;
 
-public class UploadDepositOnSameFileSystemHealthCheck extends HealthCheck {
+public class FileSystemPermissionHealthCheck extends HealthCheck {
     private final List<CollectionConfig> collectionConfigList;
     private final FileService fileService;
 
-    public UploadDepositOnSameFileSystemHealthCheck(List<CollectionConfig> collectionConfigList, FileService fileService) {
+    public FileSystemPermissionHealthCheck(List<CollectionConfig> collectionConfigList, FileService fileService) {
         this.collectionConfigList = collectionConfigList;
         this.fileService = fileService;
     }
@@ -36,10 +36,16 @@ public class UploadDepositOnSameFileSystemHealthCheck extends HealthCheck {
         var isValid = true;
 
         for (var collection : collectionConfigList) {
-            var isSameFileStore = fileService.isSameFileSystem(collection.getUploads(), collection.getDeposits());
+            var canWrite = fileService.canWriteTo(collection.getUploads());
+            var canMove = fileService.canWriteTo(collection.getDeposits());
 
-            if (!isSameFileStore) {
-                result.withDetail(collection.getName(), "Upload and deposit path are on different file stores");
+            if (!canWrite) {
+                result.withDetail(collection.getName() + ":upload", String.format("Upload path %s is not writable", collection.getUploads()));
+                isValid = false;
+            }
+
+            if (!canMove) {
+                result.withDetail(collection.getName() + ":deposit", String.format("Deposit path %s is not writable", collection.getDeposits()));
                 isValid = false;
             }
         }
@@ -48,7 +54,7 @@ public class UploadDepositOnSameFileSystemHealthCheck extends HealthCheck {
             return result.healthy().build();
         }
         else {
-            return result.unhealthy().withMessage("Some collections have their upload and deposit paths on different file stores").build();
+            return result.unhealthy().withMessage("Some collections have un-writable paths").build();
         }
     }
 }
