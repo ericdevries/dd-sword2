@@ -32,13 +32,11 @@ public class DepositFinalizerManager implements Managed {
     private final BlockingQueue<DepositFinalizerEvent> taskQueue;
     private final ExecutorService finalizerQueue;
     private final ExecutorService rescheduleQueue;
-    private final Duration rescheduleDelay;
 
     public DepositFinalizerManager(ExecutorService finalizerQueue, DepositHandler depositHandler,
         BlockingQueue<DepositFinalizerEvent> taskQueue, ExecutorService rescheduleQueue,
         Duration rescheduleDelay) {
         this.depositHandler = depositHandler;
-        this.rescheduleDelay = rescheduleDelay;
         this.depositFinalizerListenerThread = new Thread(new DepositFinalizerListener(taskQueue, finalizerQueue, depositHandler, rescheduleQueue, rescheduleDelay));
         this.taskQueue = taskQueue;
         this.finalizerQueue = finalizerQueue;

@@ -48,9 +48,6 @@ public interface DepositHandler {
 
     Deposit finalizeDeposit(String depositId)
         throws DepositNotFoundException, InvalidDepositException, InvalidPartialFileException, CollectionNotFoundException, IOException, NotEnoughDiskSpaceException;
-//
-//    void setDepositToInvalid(String depositId, String message) throws InvalidDepositException, DepositNotFoundException, CollectionNotFoundException;
-//
-//    void setDepositToRetrying(String depositId) throws InvalidDepositException, DepositNotFoundException, CollectionNotFoundException;
+
 }
 

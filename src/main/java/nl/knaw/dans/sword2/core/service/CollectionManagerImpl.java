@@ -19,7 +19,6 @@ import nl.knaw.dans.sword2.auth.Depositor;
 import nl.knaw.dans.sword2.config.CollectionConfig;
 import nl.knaw.dans.sword2.core.exceptions.CollectionNotFoundException;
 
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,17 +53,6 @@ public class CollectionManagerImpl implements CollectionManager {
         }
 
         return config;
-    }
-
-    @Override
-    public CollectionConfig getCollectionByFilesystemPath(Path path) throws CollectionNotFoundException {
-        for (var config: collectionConfig) {
-            if (path.startsWith(config.getUploads()) || path.startsWith(config.getDeposits())) {
-                return config;
-            }
-        }
-
-        throw new CollectionNotFoundException(String.format("No collection found that matches path %s", path));
     }
 
     @Override

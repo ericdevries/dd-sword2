@@ -26,8 +26,6 @@ public interface CollectionManager {
 
     CollectionConfig getCollectionByPath(String id, Depositor depositor) throws CollectionNotFoundException;
 
-    CollectionConfig getCollectionByFilesystemPath(Path path) throws CollectionNotFoundException;
-
     CollectionConfig getCollectionByName(String id) throws CollectionNotFoundException;
 
     List<CollectionConfig> getCollections(Depositor depositor);

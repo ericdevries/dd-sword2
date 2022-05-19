@@ -15,16 +15,18 @@
  */
 package nl.knaw.dans.sword2.resource;
 
-import nl.knaw.dans.sword2.auth.Depositor;
-import nl.knaw.dans.sword2.core.exceptions.DepositNotFoundException;
-import nl.knaw.dans.sword2.core.exceptions.InvalidDepositException;
 import nl.knaw.dans.sword2.api.entry.Link;
 import nl.knaw.dans.sword2.api.statement.Feed;
 import nl.knaw.dans.sword2.api.statement.FeedAuthor;
 import nl.knaw.dans.sword2.api.statement.FeedCategory;
 import nl.knaw.dans.sword2.api.statement.TextElement;
+import nl.knaw.dans.sword2.auth.Depositor;
+import nl.knaw.dans.sword2.core.exceptions.DepositNotFoundException;
+import nl.knaw.dans.sword2.core.exceptions.InvalidDepositException;
 import nl.knaw.dans.sword2.core.service.DepositHandler;
 import nl.knaw.dans.sword2.core.service.ErrorResponseFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
@@ -32,6 +34,8 @@ import javax.ws.rs.core.Response;
 import java.net.URI;
 
 public class StatementResourceImpl extends BaseHandler implements StatementResource {
+    private static final Logger log = LoggerFactory.getLogger(StatementResourceImpl.class);
+
     private final URI baseUrl;
     private final DepositHandler depositHandler;
 
@@ -43,6 +47,8 @@ public class StatementResourceImpl extends BaseHandler implements StatementResou
 
     @Override
     public Response getStatement(String depositId, HttpHeaders headers, Depositor depositor) {
+        log.info("Received getStatement request for deposit with ID {} and user {}", depositId, depositor.getName());
+
         try {
             var deposit = depositHandler.getDeposit(depositId, depositor);
             var url = baseUrl.resolve("/statement/" + depositId).toString();
@@ -61,9 +67,11 @@ public class StatementResourceImpl extends BaseHandler implements StatementResou
                 .build();
         }
         catch (DepositNotFoundException e) {
+            log.error("Deposit with id {} could not be found", depositId, e);
             throw new WebApplicationException(404);
         }
         catch (InvalidDepositException e) {
+            log.error("Deposit with id {} is invalid", depositId, e);
             throw new WebApplicationException(400);
         }
     }

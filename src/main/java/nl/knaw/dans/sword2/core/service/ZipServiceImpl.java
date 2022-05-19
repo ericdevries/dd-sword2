@@ -15,6 +15,9 @@
  */
 package nl.knaw.dans.sword2.core.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
@@ -27,6 +30,8 @@ import java.util.zip.ZipFile;
 
 @Singleton
 public class ZipServiceImpl implements ZipService {
+    private static final Logger log = LoggerFactory.getLogger(ZipServiceImpl.class);
+
     private final FileService fileService;
 
     @Inject
@@ -40,17 +45,18 @@ public class ZipServiceImpl implements ZipService {
         extractZipFileWithFileMapping(file, targetPath, fileMapping);
     }
 
-    void extractZipFileWithFileMapping(ZipFile zipFile, Path targetPath, Map<String, String> fileMapping) throws IOException {
+    void extractZipFileWithFileMapping(ZipFile zipFile, Path targetPath, Map<String, String> fileMapping) {
 
         zipFile.stream().filter(e -> !e.getName().endsWith("/")).forEach(entry -> {
             var name = entry.getName();
             var target = targetPath.resolve(Path.of(fileMapping.getOrDefault(name, name)));
 
             try {
+                log.trace("Extracting entry {} to target destination {}", entry.getName(), target);
                 fileService.copyFile(zipFile.getInputStream(entry), target);
             }
             catch (IOException e) {
-                e.printStackTrace();
+                log.error("Unable to copy entry {} to {}", entry.getName(), target, e);
             }
         });
     }

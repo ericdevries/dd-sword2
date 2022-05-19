@@ -23,6 +23,7 @@ import nl.knaw.dans.sword2.DdSword2Configuration;
 import nl.knaw.dans.sword2.api.entry.Entry;
 import nl.knaw.dans.sword2.api.error.Error;
 import nl.knaw.dans.sword2.api.statement.Feed;
+import nl.knaw.dans.sword2.api.statement.FeedEntry;
 import nl.knaw.dans.sword2.core.service.ChecksumCalculator;
 import nl.knaw.dans.sword2.core.service.ChecksumCalculatorImpl;
 import nl.knaw.dans.sword2.core.service.FileServiceImpl;
@@ -127,6 +128,69 @@ class CollectionResourceImplTest {
             .get();
 
         var feed = statusResult.readEntity(Feed.class);
+        assertEquals("http://localhost:20320/statement/" + id, feed.getId());
+    }
+
+    @Test
+    void testDepositReceiptFromContainerEndpoint() throws IOException, JAXBException, ConfigurationException {
+        var path = getClass().getResource("/zips/audiences.zip");
+
+        assert path != null;
+
+        var result = buildRequest("/collection/1")
+            .header("content-type", "application/zip")
+            .header("content-md5", "bc27e20467a773501a4ae37fb85a9c3f")
+            .header("content-disposition", "attachment; filename=bag.zip")
+            .header("in-progress", "true")
+            .post(Entity.entity(path.openStream(), MediaType.valueOf("application/zip")));
+
+        assertEquals(201, result.getStatus());
+
+        var receipt = result.readEntity(Entry.class);
+        var parts = receipt.getId()
+            .split("/");
+        var id = parts[parts.length - 1];
+
+        var statusResult = buildRequest("/container/" + id)
+            .get();
+
+        var feed = statusResult.readEntity(Entry.class);
+        assertEquals("http://localhost:20320/container/" + id, feed.getId());
+    }
+
+    @Test
+    void testDepositReceiptFromContainerEndpointHead() throws IOException {
+        var path = getClass().getResource("/zips/audiences.zip");
+
+        assert path != null;
+
+        var result = buildRequest("/collection/1")
+            .header("content-type", "application/zip")
+            .header("content-md5", "bc27e20467a773501a4ae37fb85a9c3f")
+            .header("content-disposition", "attachment; filename=bag.zip")
+            .header("in-progress", "true")
+            .post(Entity.entity(path.openStream(), MediaType.valueOf("application/zip")));
+
+        assertEquals(201, result.getStatus());
+
+        var receipt = result.readEntity(Entry.class);
+        var parts = receipt.getId()
+            .split("/");
+        var id = parts[parts.length - 1];
+
+        var statusResult = buildRequest("/container/" + id)
+            .head();
+
+        assertEquals(200, statusResult.getStatus());
+        assertEquals("http://localhost:20320/container/" + id, statusResult.getHeaderString("location"));
+    }
+
+    @Test
+    void testDepositReceiptFromContainerEndpointNotFound() {
+        var statusResult = buildRequest("/container/" + "random_id")
+            .get();
+
+        assertEquals(404, statusResult.getStatus());
     }
 
     @Test

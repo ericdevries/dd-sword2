@@ -30,12 +30,15 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BagExtractorImplTest {
@@ -195,6 +198,75 @@ class BagExtractorImplTest {
         Files.write(name, copy);
 
         return name;
+    }
+
+    @Test
+    void testMultipleFolders() throws IOException {
+        var fileService = Mockito.mock(FileService.class);
+        Mockito.when(fileService.listDirectories(Mockito.any()))
+            .thenReturn(List.of(Path.of("1"), Path.of("2")));
+
+        assertThrows(InvalidDepositException.class, () -> new BagExtractorImpl(zipService, fileService, bagItManager, filesystemSpaceVerifier)
+            .getBagDir(Path.of("test")));
+    }
+
+    @Test
+    void testSingleFolders() throws InvalidDepositException, IOException {
+        var fileService = Mockito.mock(FileService.class);
+        Mockito.when(fileService.listDirectories(Mockito.any()))
+            .thenReturn(List.of(Path.of("1")));
+
+        var bagDir = new BagExtractorImpl(zipService, fileService, bagItManager, filesystemSpaceVerifier).getBagDir(Path.of("test"));
+        assertEquals(Path.of("1"), bagDir);
+    }
+
+    @Test
+    void testZeroFolders() throws IOException {
+        var fileService = Mockito.mock(FileService.class);
+        Mockito.when(fileService.listDirectories(Mockito.any()))
+            .thenReturn(new ArrayList<>());
+
+        assertThrows(InvalidDepositException.class, () -> new BagExtractorImpl(zipService, fileService, bagItManager, filesystemSpaceVerifier)
+            .getBagDir(Path.of("test")));
+    }
+
+    @Test
+    void testCorrectSequenceNumber() throws InvalidPartialFileException {
+        var path = Path.of("test.123");
+        var number = new BagExtractorImpl(zipService, fileService, bagItManager, filesystemSpaceVerifier).getSequenceNumber(path);
+        assertEquals(123, number);
+    }
+
+    @Test
+    void testCorrectSequenceNumberWithMoreDots() throws InvalidPartialFileException {
+        var path = Path.of("test.more.dots..15");
+        var number = new BagExtractorImpl(zipService, fileService, bagItManager, filesystemSpaceVerifier).getSequenceNumber(path);
+
+        assertEquals(15, number);
+    }
+
+    @Test
+    void testIncorrectNumberZero() throws InvalidPartialFileException {
+        var path = Path.of("test.0");
+        assertThrows(InvalidPartialFileException.class, () -> new BagExtractorImpl(zipService, fileService, bagItManager, filesystemSpaceVerifier).getSequenceNumber(path));
+    }
+
+    @Test
+    void testMissingSequence() throws InvalidPartialFileException {
+        var path = Path.of("test");
+        assertThrows(InvalidPartialFileException.class, () -> new BagExtractorImpl(zipService, fileService, bagItManager, filesystemSpaceVerifier).getSequenceNumber(path));
+    }
+
+    @Test
+    void testNonNumericalExtension() throws InvalidPartialFileException {
+        var path = Path.of("test.zip1");
+        assertThrows(InvalidPartialFileException.class, () -> new BagExtractorImpl(zipService, fileService, bagItManager, filesystemSpaceVerifier).getSequenceNumber(path));
+    }
+
+    @Test
+    void testNegativeNumber() throws InvalidPartialFileException {
+        var path = Path.of("test.-1");
+        assertThrows(InvalidPartialFileException.class, () -> new BagExtractorImpl(zipService, fileService, bagItManager, filesystemSpaceVerifier).getSequenceNumber(path));
     }
 
     void testExtractWithFilePathMapping() {

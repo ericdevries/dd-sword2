@@ -276,7 +276,6 @@ public class CollectionResourceBagSenderTest {
 
         var checksum = checksumCalculator.calculateChecksum(zipFile.getFile().toPath(), "MD5");
         var url = String.format("http://localhost:%s%s", EXT.getLocalPort(), "/collection/1");
-        //        var url = String.format("http://localhost:%s%s", 20100, "/collection/1");
 
         return EXT.client().target(url)
             .request()

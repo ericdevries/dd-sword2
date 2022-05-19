@@ -27,6 +27,8 @@ import nl.knaw.dans.sword2.core.exceptions.NotEnoughDiskSpaceException;
 import nl.knaw.dans.sword2.core.service.DepositHandler;
 import nl.knaw.dans.sword2.core.service.DepositReceiptFactory;
 import nl.knaw.dans.sword2.core.service.ErrorResponseFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
@@ -37,6 +39,8 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class ContainerResourceImpl extends BaseHandler implements ContainerResource {
+    private static final Logger log = LoggerFactory.getLogger(ContainerResourceImpl.class);
+
     private final DepositReceiptFactory depositReceiptFactory;
     private final DepositHandler depositHandler;
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss Z");
@@ -49,6 +53,8 @@ public class ContainerResourceImpl extends BaseHandler implements ContainerResou
 
     @Override
     public Response getDepositReceipt(String depositId, HttpHeaders headers, Depositor depositor) {
+        log.info("Received getDepositReceipt request for deposit with ID {} and user {}", depositId, depositor.getName());
+
         try {
             var deposit = depositHandler.getDeposit(depositId, depositor);
             var entry = depositReceiptFactory.createDepositReceipt(deposit);
@@ -63,15 +69,19 @@ public class ContainerResourceImpl extends BaseHandler implements ContainerResou
 
         }
         catch (DepositNotFoundException e) {
-            throw new WebApplicationException(403);
+            log.error("Deposit with id {} could not be found", depositId, e);
+            throw new WebApplicationException(404);
         }
         catch (InvalidDepositException e) {
+            log.error("Deposit with id {} is invalid", depositId, e);
             throw new WebApplicationException(500);
         }
     }
 
     @Override
     public Response getDepositReceiptHead(String depositId, HttpHeaders headers, Depositor depositor) {
+        log.info("Received getDepositReceiptHead request for deposit with ID {} and user {}", depositId, depositor.getName());
+
         try {
             var deposit = depositHandler.getDeposit(depositId, depositor);
             var location = depositReceiptFactory.getDepositLocation(deposit);
@@ -83,13 +93,20 @@ public class ContainerResourceImpl extends BaseHandler implements ContainerResou
                 .build();
 
         }
-        catch (DepositNotFoundException | InvalidDepositException e) {
+        catch (DepositNotFoundException e) {
+            log.error("Deposit with id {} could not be found", depositId, e);
             throw new WebApplicationException(403);
+        }
+        catch (InvalidDepositException e) {
+            log.error("Deposit with id {} is invalid", depositId, e);
+            throw new WebApplicationException(500);
         }
     }
 
     @Override
     public Response addMedia(InputStream inputStream, String depositId, HttpHeaders headers, Depositor depositor) {
+        log.info("Received getDepositReceiptHead request for deposit with ID {} and user {}", depositId, depositor.getName());
+
         try {
             var contentType = getContentType(headers.getHeaderString("content-type"));
             var inProgress = getInProgress(headers.getHeaderString("in-progress"));
@@ -112,24 +129,32 @@ public class ContainerResourceImpl extends BaseHandler implements ContainerResou
                 .entity(entry)
                 .build();
         }
-        catch (IOException | InvalidHeaderException e) {
+        catch (IOException e) {
+            log.error("An IOException occured while processing the request for deposit with ID {}", depositId, e);
+            return buildSwordErrorResponse(UriRegistry.ERROR_BAD_REQUEST, e.getMessage());
+        }
+        catch (InvalidHeaderException e) {
+            log.error("An invalid header was received while processing the request for deposit with ID {}", depositId, e);
             return buildSwordErrorResponse(UriRegistry.ERROR_BAD_REQUEST, e.getMessage());
         }
         catch (CollectionNotFoundException | DepositReadOnlyException e) {
-            e.printStackTrace();
+            log.error("The deposit with ID {} is read-only", depositId, e);
             return buildSwordErrorResponse(UriRegistry.ERROR_METHOD_NOT_ALLOWED, e.getMessage());
         }
         catch (HashMismatchException e) {
+            log.error("The content has a different checksum than the one provided for deposit with ID {}", depositId, e);
             return buildSwordErrorResponse(UriRegistry.ERROR_CHECKSUM_MISMATCH);
         }
         catch (NotEnoughDiskSpaceException e) {
+            log.error("The content could not be stored due to insufficient disk space, for deposit with ID {}", depositId, e);
             throw new WebApplicationException(e, 503);
         }
         catch (DepositNotFoundException e) {
-            // TODO find out how the specs deal with an unknown deposit
+            log.error("Deposit with ID {} could not be found", depositId, e);
             throw new WebApplicationException(e, 404);
         }
         catch (InvalidDepositException e) {
+            log.error("The deposit with ID {} is invalid", depositId, e);
             throw new WebApplicationException(e, 500);
         }
     }

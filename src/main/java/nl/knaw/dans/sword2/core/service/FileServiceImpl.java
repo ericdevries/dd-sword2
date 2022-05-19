@@ -71,10 +71,8 @@ public class FileServiceImpl implements FileService {
 
         }
         catch (NoSuchAlgorithmException e) {
-            // noop
+            throw new IOException(String.format("Unable to copy file to target %s because the system does not support MD5 hasing", target), e);
         }
-
-        throw new IOException(String.format("Unable to copy file to target %s", target));
     }
 
     @Override

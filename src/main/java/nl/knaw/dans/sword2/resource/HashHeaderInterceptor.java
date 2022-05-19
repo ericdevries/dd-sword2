@@ -41,7 +41,7 @@ public class HashHeaderInterceptor implements WriterInterceptor {
             var checksum = DatatypeConverter.printHexBinary(digest.digest()).toLowerCase(Locale.ROOT);
             context.getHeaders().add("Content-MD5", checksum);
 
-            log.debug("Set Content-MD5 checksum for response payload to {}", checksum);
+            log.trace("Set Content-MD5 checksum for response payload to {}", checksum);
         }
         catch (NoSuchAlgorithmException e) {
             log.error("No such algorithm", e);
