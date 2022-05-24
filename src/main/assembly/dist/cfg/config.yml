@@ -18,6 +18,7 @@ users:
 
 sword2:
   baseUrl: 'http://localhost:20320/'
+  emailAddress: test@test.com
   collections:
     - name: 'collection1'
       path: '1'

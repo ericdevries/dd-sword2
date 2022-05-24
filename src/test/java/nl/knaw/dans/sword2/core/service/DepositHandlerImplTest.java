@@ -28,6 +28,7 @@ import nl.knaw.dans.sword2.core.exceptions.NotEnoughDiskSpaceException;
 import nl.knaw.dans.sword2.core.finalizer.DepositFinalizerEvent;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -108,10 +109,14 @@ class DepositHandlerImplTest {
         var depositHandler = new DepositHandlerImpl(
             bagExtractor,
             fileService,
-            depositPropertiesManager, collectionManager, userManager, queue, bagItManager, filesystemSpaceVerifier);
+            depositPropertiesManager, collectionManager, userManager, queue, bagItManager, filesystemSpaceVerifier, "test@test.com");
 
         depositHandler.finalizeDeposit("testid");
 
-//        assertEquals(1, 2);
+        var deposit = depositPropertiesManager.getProperties(Path.of("data/tmp/deposithandler/deposits/testid"));
+
+        Assertions.assertEquals("audiences", deposit.getBagName());
+        Assertions.assertEquals("sword:testid", deposit.getSwordToken());
+        Assertions.assertEquals(DepositState.SUBMITTED, deposit.getState());
     }
 }

@@ -56,9 +56,10 @@ public class DepositHandlerImpl implements DepositHandler {
     private final BlockingQueue<DepositFinalizerEvent> depositFinalizerQueue;
     private final BagItManager bagItManager;
     private final FilesystemSpaceVerifier filesystemSpaceVerifier;
+    private final String emailAddress;
 
     public DepositHandlerImpl(BagExtractor bagExtractor, FileService fileService, DepositPropertiesManager depositPropertiesManager, CollectionManager collectionManager,
-        UserManager userManager, BlockingQueue<DepositFinalizerEvent> depositFinalizerQueue, BagItManager bagItManager, FilesystemSpaceVerifier filesystemSpaceVerifier) {
+        UserManager userManager, BlockingQueue<DepositFinalizerEvent> depositFinalizerQueue, BagItManager bagItManager, FilesystemSpaceVerifier filesystemSpaceVerifier, String emailAddress) {
         this.bagExtractor = bagExtractor;
         this.fileService = fileService;
         this.depositPropertiesManager = depositPropertiesManager;
@@ -67,6 +68,7 @@ public class DepositHandlerImpl implements DepositHandler {
         this.depositFinalizerQueue = depositFinalizerQueue;
         this.bagItManager = bagItManager;
         this.filesystemSpaceVerifier = filesystemSpaceVerifier;
+        this.emailAddress = emailAddress;
     }
 
     @Override
@@ -345,12 +347,10 @@ public class DepositHandlerImpl implements DepositHandler {
 
     String getGenericErrorMessage(String depositId) {
         var timestamp = OffsetDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-        // TODO fill this in
-        var emailAddress = "test@test.com";
 
         return String.format("The server encountered an unexpected condition. "
             + "Please contact the SWORD service administrator at %s. "
-            + "The error occured at timestamp %s. Your 'DepositID' is %s", emailAddress, timestamp, depositId);
+            + "The error occured at timestamp %s. Your 'DepositID' is %s", this.emailAddress, timestamp, depositId);
     }
 
     void setDepositToInvalid(String depositId, String message) throws InvalidDepositException, DepositNotFoundException, CollectionNotFoundException {

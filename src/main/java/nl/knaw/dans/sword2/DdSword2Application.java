@@ -101,7 +101,7 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
 
         var bagExtractor = new BagExtractorImpl(zipService, fileService, bagItManager, filesystemSpaceVerifier);
         var depositHandler = new DepositHandlerImpl(bagExtractor, fileService, depositPropertiesManager, collectionManager, userManager, queue, bagItManager,
-            filesystemSpaceVerifier);
+            filesystemSpaceVerifier, configuration.getSword2().getEmailAddress());
 
         var depositReceiptFactory = new DepositReceiptFactoryImpl(configuration.getSword2().getBaseUrl());
 

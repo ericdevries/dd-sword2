@@ -15,11 +15,10 @@
  */
 package nl.knaw.dans.sword2.config;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import nl.knaw.dans.lib.util.ExecutorServiceFactory;
-import nl.knaw.dans.sword2.config.converter.StringByteSizeConverter;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Email;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.net.URI;
@@ -31,6 +30,9 @@ public class Sword2Config {
     @Valid
     @NotNull
     private URI baseUrl;
+    @Email
+    @NotEmpty
+    private String emailAddress;
     @NotEmpty
     private List<CollectionConfig> collections;
     @Valid
@@ -42,6 +44,14 @@ public class Sword2Config {
     @Valid
     @NotNull
     private ExecutorServiceFactory rescheduleQueue;
+
+    public String getEmailAddress() {
+        return emailAddress;
+    }
+
+    public void setEmailAddress(String emailAddress) {
+        this.emailAddress = emailAddress;
+    }
 
     public ExecutorServiceFactory getRescheduleQueue() {
         return rescheduleQueue;
