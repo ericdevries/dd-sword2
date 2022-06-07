@@ -1,0 +1,70 @@
+
+server:
+  applicationContextPath: /
+  adminContextPath: /
+  applicationConnectors:
+    - type: http
+      # Replace with port number unique for this service
+      port: 20000
+  adminConnectors:
+    - type: http
+      # Replace with port number unique for this service
+      port: 20001
+
+
+users:
+  - name: 'user001'
+    passwordHash: '$2a$10$yvmSYczU7z4KL6qmRCTgTeSvo7uurwPUbB9s/mTKzJrYM/sQKgF.y'
+    filepathMapping: true
+    collections:
+      - collection1
+
+sword2:
+  baseUrl: 'http://localhost:20320/'
+  collections:
+    - name: 'collection1'
+      path: '1'
+      uploads: data/tmp/bagsender/uploads
+      deposits: data/tmp/bagsender/deposits
+      autoClean:
+        - REJECTED
+        - INVALID
+      diskSpaceMargin: 2G
+  rescheduleDelay: PT30S
+  finalizingQueue:
+    nameFormat: "finalization-worker-%d"
+    maxQueueSize: 5000
+    # Number of threads will be increased when maxQueueSize is exceeded.
+    minThreads: 2
+    # No more than maxThreads will be created though
+    maxThreads: 5
+    # Threads will die after 60 seconds of idleness
+    keepAliveTime: 60 seconds
+  rescheduleQueue:
+    nameFormat: "finalization-worker-%d"
+    maxQueueSize: 5000
+    # Number of threads will be increased when maxQueueSize is exceeded.
+    minThreads: 2
+    # No more than maxThreads will be created though
+    maxThreads: 5
+    # Threads will die after 60 seconds of idleness
+    keepAliveTime: 60 seconds
+
+#
+# See https://www.dropwizard.io/en/latest/manual/configuration.html#logging
+#
+logging:
+  level: INFO
+  loggers:
+    "nl.knaw.dans": TRACE
+  appenders:
+    - type: console
+      logFormat: "%-5p [%d{ISO8601}] [%t] %c: %m%n%rEx"
+
+    - type: file
+      archive: false
+      currentLogFilename: data/tmp/bagsender/dd-sword2.log
+
+health:
+  delayedShutdownHandlerEnabled: false
+  initialOverallState: false
