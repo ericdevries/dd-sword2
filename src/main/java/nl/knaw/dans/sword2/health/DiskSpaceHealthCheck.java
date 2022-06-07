@@ -16,7 +16,7 @@
 package nl.knaw.dans.sword2.health;
 
 import com.codahale.metrics.health.HealthCheck;
-import nl.knaw.dans.sword2.config.CollectionConfig;
+import nl.knaw.dans.sword2.core.config.CollectionConfig;
 import nl.knaw.dans.sword2.core.exceptions.NotEnoughDiskSpaceException;
 import nl.knaw.dans.sword2.core.service.FilesystemSpaceVerifier;
 import org.slf4j.Logger;

@@ -35,9 +35,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(DropwizardExtensionsSupport.class)
 class ServiceDocumentResourceImplTest {
 
-    private static DropwizardAppExtension<DdSword2Configuration> EXT = new DropwizardAppExtension<>(
+    private DropwizardAppExtension<DdSword2Configuration> EXT = new DropwizardAppExtension<>(
         DdSword2Application.class,
-        ResourceHelpers.resourceFilePath("debug-etc/config-servicedocument.yml")
+        ResourceHelpers.resourceFilePath("test-etc/config-servicedocument.yml")
     );
 
     @Test

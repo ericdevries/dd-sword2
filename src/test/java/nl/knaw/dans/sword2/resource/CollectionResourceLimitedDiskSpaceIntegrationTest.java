@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @ExtendWith(DropwizardExtensionsSupport.class)
 public class CollectionResourceLimitedDiskSpaceIntegrationTest {
 
-    private static DropwizardAppExtension<DdSword2Configuration> EXT = new DropwizardAppExtension<>(DdSword2Application.class, ResourceHelpers.resourceFilePath("debug-etc/config-bigmargin.yml"));
+    private final DropwizardAppExtension<DdSword2Configuration> EXT = new DropwizardAppExtension<>(DdSword2Application.class, ResourceHelpers.resourceFilePath("test-etc/config-bigmargin.yml"));
 
     @BeforeEach
     void startUp() throws IOException {

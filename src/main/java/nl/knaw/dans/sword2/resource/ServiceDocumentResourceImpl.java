@@ -15,9 +15,9 @@
  */
 package nl.knaw.dans.sword2.resource;
 
-import nl.knaw.dans.sword2.config.UriRegistry;
+import nl.knaw.dans.sword2.core.config.UriRegistry;
 import nl.knaw.dans.sword2.auth.Depositor;
-import nl.knaw.dans.sword2.config.CollectionConfig;
+import nl.knaw.dans.sword2.core.config.CollectionConfig;
 import nl.knaw.dans.sword2.api.service.ServiceCollection;
 import nl.knaw.dans.sword2.api.service.ServiceDocument;
 import nl.knaw.dans.sword2.api.service.ServiceWorkspace;

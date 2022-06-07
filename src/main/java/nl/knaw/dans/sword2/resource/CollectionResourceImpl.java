@@ -19,7 +19,7 @@ import nl.knaw.dans.sword2.api.error.Generator;
 import nl.knaw.dans.sword2.api.statement.Feed;
 import nl.knaw.dans.sword2.api.statement.FeedEntry;
 import nl.knaw.dans.sword2.auth.Depositor;
-import nl.knaw.dans.sword2.config.UriRegistry;
+import nl.knaw.dans.sword2.core.config.UriRegistry;
 import nl.knaw.dans.sword2.core.exceptions.CollectionNotFoundException;
 import nl.knaw.dans.sword2.core.exceptions.HashMismatchException;
 import nl.knaw.dans.sword2.core.exceptions.InvalidDepositException;

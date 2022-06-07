@@ -21,15 +21,15 @@ users:
 
 sword2:
   baseUrl: 'http://localhost:20320/'
+  emailAddress: 'test@test.com'
   collections:
     - name: 'collection1'
       path: '1'
-      uploads: data/tmp/bagsender/uploads
-      deposits: data/tmp/bagsender/deposits
+      uploads: data/tmp/1/uploads
+      deposits: data/tmp/1/deposits
       autoClean:
         - REJECTED
-        - INVALID
-      diskSpaceMargin: 2G
+      diskSpaceMargin: 200000G
   rescheduleDelay: PT30S
   finalizingQueue:
     nameFormat: "finalization-worker-%d"
@@ -63,7 +63,7 @@ logging:
 
     - type: file
       archive: false
-      currentLogFilename: data/tmp/bagsender/dd-sword2.log
+      currentLogFilename: data/tmp/dd-sword2.log
 
 health:
   delayedShutdownHandlerEnabled: false

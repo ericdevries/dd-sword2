@@ -19,8 +19,8 @@ package nl.knaw.dans.sword2;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dropwizard.Configuration;
 import io.dropwizard.health.conf.HealthConfiguration;
-import nl.knaw.dans.sword2.config.Sword2Config;
-import nl.knaw.dans.sword2.config.UserConfig;
+import nl.knaw.dans.sword2.core.config.Sword2Config;
+import nl.knaw.dans.sword2.core.config.UserConfig;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;

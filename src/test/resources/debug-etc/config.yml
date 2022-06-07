@@ -1,33 +1,31 @@
-
 server:
   applicationContextPath: /
   adminContextPath: /
   applicationConnectors:
     - type: http
       # Replace with port number unique for this service
-      port: 20000
+      port: 20320
   adminConnectors:
     - type: http
       # Replace with port number unique for this service
-      port: 20001
-
+      port: 20321
 
 users:
   - name: 'user001'
-    passwordHash: '$2a$10$yvmSYczU7z4KL6qmRCTgTeSvo7uurwPUbB9s/mTKzJrYM/sQKgF.y'
+    passwordHash: '$2a$10$yvmSYczU7z4KL6qmRCTgTeSvo7uurwPUbB9s/mTKzJrYM/sQKgF.y' # user001
     filepathMapping: true
     collections:
       - collection1
 
 sword2:
   baseUrl: 'http://localhost:20320/'
+  emailAddress: 'test@test.com'
   collections:
     - name: 'collection1'
       path: '1'
       uploads: data/tmp/1/uploads
       deposits: data/tmp/1/deposits
       autoClean:
-        - REJECTED
         - INVALID
       diskSpaceMargin: 2G
     - name: 'collection2'
@@ -35,7 +33,6 @@ sword2:
       uploads: data/tmp/2/uploads
       deposits: data/tmp/2/deposits
       autoClean:
-        - REJECTED
         - INVALID
       diskSpaceMargin: 2G
   rescheduleDelay: PT30S
@@ -68,7 +65,6 @@ logging:
   appenders:
     - type: console
       logFormat: "%-5p [%d{ISO8601}] [%t] %c: %m%n%rEx"
-
     - type: file
       archive: false
       currentLogFilename: data/tmp/dd-sword2.log
@@ -76,3 +72,16 @@ logging:
 health:
   delayedShutdownHandlerEnabled: false
   initialOverallState: false
+  healthChecks:
+    - critical: true
+      name: DiskSpace
+    - critical: true
+      name: UploadDepositIsOnSameFileSystem
+    - critical: true
+      name: FileSystemPermissions
+    - critical: true
+      name: FinalizerQueue
+    - critical: true
+      name: FinalizingExecutor
+    - critical: true
+      name: RescheduleExecutor

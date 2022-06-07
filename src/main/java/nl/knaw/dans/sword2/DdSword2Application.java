@@ -109,6 +109,9 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
 
         environment.jersey().register(MultiPartFeature.class);
 
+        // Add a md5 output hash header
+        environment.jersey().register(HashHeaderInterceptor.class);
+
         // Set up authentication
         environment.jersey().register(
             new AuthDynamicFeature(new BasicCredentialAuthFilter.Builder<Depositor>().setAuthenticator(new SwordAuthenticator(configuration.getUsers())).setRealm("SWORD2").buildAuthFilter()));
@@ -118,7 +121,6 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
 
         // Managed classes
         environment.lifecycle().manage(depositFinalizerManager);
-        environment.jersey().register(HashHeaderInterceptor.class);
 
         // Resources
         environment.jersey().register(new CollectionResourceImpl(depositHandler, depositReceiptFactory, errorResponseFactory));

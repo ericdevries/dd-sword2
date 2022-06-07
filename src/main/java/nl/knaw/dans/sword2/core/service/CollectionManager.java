@@ -16,10 +16,9 @@
 package nl.knaw.dans.sword2.core.service;
 
 import nl.knaw.dans.sword2.auth.Depositor;
-import nl.knaw.dans.sword2.config.CollectionConfig;
+import nl.knaw.dans.sword2.core.config.CollectionConfig;
 import nl.knaw.dans.sword2.core.exceptions.CollectionNotFoundException;
 
-import java.nio.file.Path;
 import java.util.List;
 
 public interface CollectionManager {

@@ -15,7 +15,7 @@
  */
 package nl.knaw.dans.sword2.health;
 
-import nl.knaw.dans.sword2.config.CollectionConfig;
+import nl.knaw.dans.sword2.core.config.CollectionConfig;
 import nl.knaw.dans.sword2.core.DepositState;
 import nl.knaw.dans.sword2.core.exceptions.NotEnoughDiskSpaceException;
 import nl.knaw.dans.sword2.core.service.FilesystemSpaceVerifier;

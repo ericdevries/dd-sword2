@@ -18,24 +18,18 @@ users:
     filepathMapping: true
     collections:
       - collection1
-      - collection2
 
 sword2:
   baseUrl: 'http://localhost:20320/'
+  emailAddress: 'test@test.com'
   collections:
     - name: 'collection1'
       path: '1'
-      uploads: data/tmp/1/uploads
-      deposits: data/tmp/1/deposits
+      uploads: data/tmp/bagsender/uploads
+      deposits: data/tmp/bagsender/deposits
       autoClean:
         - REJECTED
-      diskSpaceMargin: 2G
-    - name: 'collection2'
-      path: '2'
-      uploads: data/tmp/2/uploads
-      deposits: data/tmp/2/deposits
-      autoClean:
-        - REJECTED
+        - INVALID
       diskSpaceMargin: 2G
   rescheduleDelay: PT30S
   finalizingQueue:
@@ -48,7 +42,7 @@ sword2:
     # Threads will die after 60 seconds of idleness
     keepAliveTime: 60 seconds
   rescheduleQueue:
-    nameFormat: "reschedule-worker-%d"
+    nameFormat: "finalization-worker-%d"
     maxQueueSize: 5000
     # Number of threads will be increased when maxQueueSize is exceeded.
     minThreads: 2
@@ -63,15 +57,14 @@ sword2:
 logging:
   level: INFO
   loggers:
-    "nl.knaw.dans":
-      level: TRACE
+    "nl.knaw.dans": TRACE
   appenders:
     - type: console
       logFormat: "%-5p [%d{ISO8601}] [%t] %c: %m%n%rEx"
 
     - type: file
       archive: false
-      currentLogFilename: data/tmp/dd-sword2.log
+      currentLogFilename: data/tmp/bagsender/dd-sword2.log
 
 health:
   delayedShutdownHandlerEnabled: false

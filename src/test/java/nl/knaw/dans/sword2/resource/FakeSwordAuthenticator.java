@@ -19,7 +19,7 @@ import io.dropwizard.auth.AuthenticationException;
 import io.dropwizard.auth.Authenticator;
 import io.dropwizard.auth.basic.BasicCredentials;
 import nl.knaw.dans.sword2.auth.Depositor;
-import nl.knaw.dans.sword2.config.UserConfig;
+import nl.knaw.dans.sword2.core.config.UserConfig;
 
 import java.util.List;
 import java.util.Optional;

@@ -61,9 +61,9 @@ public class CollectionResourceBagSenderTest {
 
     private static final Path BASE_PATH = Path.of("data/tmp/bagsender");
 
-    private static DropwizardAppExtension<DdSword2Configuration> EXT = new DropwizardAppExtension<>(
+    private final DropwizardAppExtension<DdSword2Configuration> EXT = new DropwizardAppExtension<>(
         DdSword2Application.class,
-        ResourceHelpers.resourceFilePath("debug-etc/config-bagsender.yml")
+        ResourceHelpers.resourceFilePath("test-etc/config-bagsender.yml")
     );
 
     @BeforeEach

@@ -22,7 +22,7 @@ import io.dropwizard.testing.junit5.DropwizardExtensionsSupport;
 import io.dropwizard.testing.junit5.ResourceExtension;
 import nl.knaw.dans.sword2.api.statement.Feed;
 import nl.knaw.dans.sword2.auth.Depositor;
-import nl.knaw.dans.sword2.config.UserConfig;
+import nl.knaw.dans.sword2.core.config.UserConfig;
 import nl.knaw.dans.sword2.core.Deposit;
 import nl.knaw.dans.sword2.core.DepositState;
 import nl.knaw.dans.sword2.core.exceptions.DepositNotFoundException;
@@ -49,13 +49,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class StatementResourceImplTest {
     private static final DepositHandler depositHandler = Mockito.mock(DepositHandler.class);
     private static final ErrorResponseFactory errorResponseFactory = Mockito.mock(ErrorResponseFactory.class);
-    //
-    //    private static DropwizardAppExtension<DdSword2Configuration> EXT = new DropwizardAppExtension<>(
-    //        DdSword2Application.class,
-    //        ResourceHelpers.resourceFilePath("debug-etc/config.yml")
-    //    );
+    
     private static final List<UserConfig> userConfig = List.of(new UserConfig("user001", "hash", true, List.of("1")));
-    private static final ResourceExtension EXT = ResourceExtension.builder()
+    private final ResourceExtension EXT = ResourceExtension.builder()
         .bootstrapLogging(true)
         .addResource(new StatementResourceImpl(URI.create("http://localhost:8080"), depositHandler, errorResponseFactory))
         .addResource(HashHeaderInterceptor::new)

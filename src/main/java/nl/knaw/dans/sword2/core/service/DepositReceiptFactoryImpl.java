@@ -17,7 +17,7 @@
 package nl.knaw.dans.sword2.core.service;
 
 import nl.knaw.dans.sword2.core.Deposit;
-import nl.knaw.dans.sword2.config.UriRegistry;
+import nl.knaw.dans.sword2.core.config.UriRegistry;
 import nl.knaw.dans.sword2.api.entry.Entry;
 import nl.knaw.dans.sword2.api.entry.Link;
 

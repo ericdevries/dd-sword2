@@ -1,87 +1,67 @@
-server:
-  applicationContextPath: /
-  adminContextPath: /
-  applicationConnectors:
-    - type: http
-      port: 20320
-  adminConnectors:
-    - type: http
-      port: 20321
-
-users:
-  - name: 'user001'
-    passwordHash: '$2a$10$yvmSYczU7z4KL6qmRCTgTeSvo7uurwPUbB9s/mTKzJrYM/sQKgF.y'
-    filepathMapping: true
-    collections:
-      - collection1
-      - collection2
-
-sword2:
-  baseUrl: 'http://localhost:20320/'
-  emailAddress: test@test.com
-  collections:
-    - name: 'collection1'
-      path: '1'
-      uploads: data/1/uploads
-      deposits: data/1/deposits
-      autoClean:
-        - REJECTED
-      diskSpaceMargin: 2G
-    - name: 'collection2'
-      path: '2'
-      uploads: data/2/uploads
-      deposits: data/2/deposits
-      autoClean:
-        - REJECTED
-      diskSpaceMargin: 2G
-  rescheduleDelay: PT30S
-  finalizingQueue:
-    nameFormat: "finalization-worker-%d"
-    maxQueueSize: 5000
-    # Number of threads will be increased when maxQueueSize is exceeded.
-    minThreads: 2
-    # No more than maxThreads will be created though
-    maxThreads: 5
-    # Threads will die after 60 seconds of idleness
-    keepAliveTime: 60 seconds
-
-  rescheduleQueue:
-    nameFormat: "reschedule-worker-%d"
-    maxQueueSize: 5000
-    # Number of threads will be increased when maxQueueSize is exceeded.
-    minThreads: 2
-    # No more than maxThreads will be created though
-    maxThreads: 100
-    # Threads will die after 60 seconds of idleness
-    keepAliveTime: 3600 seconds
-#
-# See https://www.dropwizard.io/en/latest/manual/configuration.html#logging
-#
-logging:
-  level: INFO
-  loggers:
-    "nl.knaw.dans": TRACE
-  appenders:
-    - type: console
-      logFormat: "%-5p [%d{ISO8601}] [%t] %c: %m%n%rEx"
-    - type: file
-      archive: false
-      currentLogFilename: data/dd-sword2.log
-
-
 health:
   delayedShutdownHandlerEnabled: false
-  initialOverallState: false
   healthChecks:
-    - name: DiskSpace
-      critical: true
-    - name: UploadDepositIsOnSameFileSystem
-      critical: true
-    - name: FileSystemPermissions
-      critical: true
-    - name: FinalizerQueue
-      critical: true
-    - name: FinalizingExecutor
-      critical: true
-    - name: RescheduleExecutor
-      critical: true
+    - critical: true
+      name: DiskSpace
+    - critical: true
+      name: UploadDepositIsOnSameFileSystem
+    - critical: true
+      name: FileSystemPermissions
+    - critical: true
+      name: FinalizerQueue
+    - critical: true
+      name: FinalizingExecutor
+    - critical: true
+      name: RescheduleExecutor
+  initialOverallState: false
+
+logging:
+  appenders:
+    - archive: false
+      currentLogFilename: /var/opt/dans.knaw.nl/log/dd-sword2/dd-sword2.log
+      type: file
+  level: INFO
+  loggers:
+    nl.knaw.dans: TRACE
+
+server:
+  applicationConnectors:
+    - port: 20320
+      type: http
+  adminConnectors:
+    - port: 20321
+      type: http
+  adminContextPath: /
+  applicationContextPath: /
+
+sword2:
+  baseUrl: https://dar.dans.knaw.nl/sword2/
+  emailAddress: test@test.com
+  collections:
+    - name: collection1
+      path: 1
+      autoClean:
+        - INVALID
+      deposits: /var/opt/dans.knaw.nl/tmp/auto-ingest/inbox
+      uploads: /var/opt/dans.knaw.nl/tmp/sword2-uploads
+      diskSpaceMargin: 2G
+  finalizingQueue:
+    keepAliveTime: 60 seconds
+    maxQueueSize: 5000
+    maxThreads: 5
+    minThreads: 2
+    nameFormat: finalization-worker-%d
+  rescheduleDelay: PT30S
+  rescheduleQueue:
+    keepAliveTime: 3600 seconds
+    maxQueueSize: 5000
+    maxThreads: 100
+    minThreads: 2
+    nameFormat: reschedule-worker-%d
+
+users:
+  - collections:
+      - collection1
+    filepathMapping: true
+    name: user001
+    passwordHash: $2a$10$yvmSYczU7z4KL6qmRCTgTeSvo7uurwPUbB9s/mTKzJrYM/sQKgF.y

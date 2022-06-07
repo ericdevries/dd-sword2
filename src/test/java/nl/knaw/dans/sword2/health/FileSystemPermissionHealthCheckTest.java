@@ -15,11 +15,10 @@
  */
 package nl.knaw.dans.sword2.health;
 
-import nl.knaw.dans.sword2.config.CollectionConfig;
+import nl.knaw.dans.sword2.core.config.CollectionConfig;
 import nl.knaw.dans.sword2.core.DepositState;
 import nl.knaw.dans.sword2.core.service.FileService;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 
 import java.nio.file.Path;
