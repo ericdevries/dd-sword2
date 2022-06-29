@@ -33,7 +33,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.net.URI;
 
-public class StatementResourceImpl extends SuperHandler implements StatementResource {
+public class StatementResourceImpl extends BaseResource implements StatementResource {
     private static final Logger log = LoggerFactory.getLogger(StatementResourceImpl.class);
 
     private final URI baseUrl;
