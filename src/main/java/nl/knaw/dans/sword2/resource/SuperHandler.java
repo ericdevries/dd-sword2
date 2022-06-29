@@ -80,7 +80,7 @@ public class SuperHandler {
             }
         }
         catch (NumberFormatException e) {
-            log.error("Invalid content-length header: {}", header);
+            log.warn("Invalid content-length header: {}", header);
         }
 
         return -1L;
