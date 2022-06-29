@@ -80,6 +80,8 @@ public class BagItManagerImpl implements BagItManager {
     }
 
     boolean isManifestFile(Path path) {
+        log.error("Some test in BagItManager");
+
         return path.getFileName().toString().startsWith("manifest-");
     }
 

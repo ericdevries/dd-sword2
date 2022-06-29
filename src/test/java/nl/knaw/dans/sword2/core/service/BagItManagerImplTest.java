@@ -36,6 +36,8 @@ class BagItManagerImplTest {
         var checksumCalculator = Mockito.mock(ChecksumCalculator.class);
         var bagItManager = new BagItManagerImpl(fileService, checksumCalculator);
 
+
+
         assertTrue(bagItManager.isManifestFile(Path.of("manifest-md5.txt")));
         assertTrue(bagItManager.isManifestFile(Path.of("manifest-sha1.txt")));
         assertTrue(bagItManager.isManifestFile(Path.of("manifest-something.txt")));

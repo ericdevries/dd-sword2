@@ -59,8 +59,6 @@ public class BaseHandler {
             return null;
         }
 
-        log.error("Some test");
-
         var parameterParser = new ParameterParser();
         var parameters = parameterParser.parse(contentDisposition, ';');
 
