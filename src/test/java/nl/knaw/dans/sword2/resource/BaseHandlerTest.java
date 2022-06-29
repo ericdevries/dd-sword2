@@ -19,6 +19,8 @@ import nl.knaw.dans.sword2.core.exceptions.InvalidHeaderException;
 import nl.knaw.dans.sword2.core.service.ErrorResponseFactory;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.MediaType;
 import java.time.OffsetDateTime;
@@ -31,6 +33,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BaseHandlerTest {
+    private static final Logger log = LoggerFactory.getLogger(BaseHandlerTest.class);
+
     @Test
     void testDateFormat() {
         var date = OffsetDateTime.of(2022, 5, 18, 17, 18, 30, 40, ZoneOffset.UTC);
