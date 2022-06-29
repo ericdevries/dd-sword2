@@ -80,7 +80,7 @@ public class BaseHandler {
             }
         }
         catch (NumberFormatException e) {
-            log.error("Invalid content-length header: {}", header, e);
+            log.error("Invalid content-length header: {}", header);
         }
 
         return -1L;
