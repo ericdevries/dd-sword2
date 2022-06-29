@@ -33,8 +33,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BaseResourceTest {
-    private static final Logger log = LoggerFactory.getLogger(BaseResourceTest.class);
-
     @Test
     void testDateFormat() {
         var date = OffsetDateTime.of(2022, 5, 18, 17, 18, 30, 40, ZoneOffset.UTC);
