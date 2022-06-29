@@ -30,5 +30,5 @@
 
     <!-- Set log level during test with system property, e.g., mvn test -DLOG_LEVEL=debug -->
     <logger name="nl.knaw.dans" level="${LOG_LEVEL:-off}"/>
-
+    <logger name="org.junit.platform" level="${LOG_LEVEL:-off}"/>
 </configuration>
