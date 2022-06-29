@@ -63,7 +63,7 @@ class BaseHandlerTest {
     }
 
     @Test
-    void testContentLengthHeader() {
+    void testContentLengthHeader() throws Exception {
         var errorResponseFactory = Mockito.mock(ErrorResponseFactory.class);
         var handler = new BaseHandler(errorResponseFactory);
         assertEquals(123, handler.getContentLength("123"));
