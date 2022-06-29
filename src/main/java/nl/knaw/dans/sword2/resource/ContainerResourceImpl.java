@@ -38,7 +38,7 @@ import java.io.InputStream;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 
-public class ContainerResourceImpl extends BaseHandler implements ContainerResource {
+public class ContainerResourceImpl extends SuperHandler implements ContainerResource {
     private static final Logger log = LoggerFactory.getLogger(ContainerResourceImpl.class);
 
     private final DepositReceiptFactory depositReceiptFactory;

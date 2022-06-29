@@ -27,13 +27,13 @@ import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 
-public class BaseHandler {
-    private static final Logger log = LoggerFactory.getLogger(BaseHandler.class);
+public class SuperHandler {
+    private static final Logger log = LoggerFactory.getLogger(SuperHandler.class);
 
     private final ErrorResponseFactory errorResponseFactory;
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss Z");
 
-    public BaseHandler(ErrorResponseFactory errorResponseFactory) {
+    public SuperHandler(ErrorResponseFactory errorResponseFactory) {
         this.errorResponseFactory = errorResponseFactory;
     }
 

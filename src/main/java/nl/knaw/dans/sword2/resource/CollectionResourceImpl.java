@@ -38,7 +38,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.util.List;
 
-public class CollectionResourceImpl extends BaseHandler implements CollectionResource {
+public class CollectionResourceImpl extends SuperHandler implements CollectionResource {
 
     private final DepositHandler depositHandler;
     private final DepositReceiptFactory depositReceiptFactory;
