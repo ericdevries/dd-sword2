@@ -15,9 +15,11 @@
  */
 package nl.knaw.dans.sword2.resource;
 
+import io.dropwizard.testing.junit5.DropwizardExtensionsSupport;
 import nl.knaw.dans.sword2.core.exceptions.InvalidHeaderException;
 import nl.knaw.dans.sword2.core.service.ErrorResponseFactory;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(DropwizardExtensionsSupport.class)
 class BaseResourceTest {
     @Test
     void testDateFormat() {

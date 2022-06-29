@@ -28,6 +28,7 @@ import nl.knaw.dans.sword2.core.exceptions.NotEnoughDiskSpaceException;
 import nl.knaw.dans.sword2.core.finalizer.DepositFinalizerEvent;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,6 +55,11 @@ class DepositHandlerImplTest {
 
     @BeforeEach
     void beforeEach() throws IOException {
+        FileUtils.deleteDirectory(new File("data/tmp/deposithandler/"));
+    }
+
+    @AfterEach
+    void afterEach() throws IOException {
         FileUtils.deleteDirectory(new File("data/tmp/deposithandler/"));
     }
 

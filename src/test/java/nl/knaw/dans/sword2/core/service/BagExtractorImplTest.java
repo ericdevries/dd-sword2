@@ -65,7 +65,7 @@ class BagExtractorImplTest {
 
     @AfterEach
     void tearDown() throws IOException {
-        //        FileUtils.deleteDirectory(testPath.toFile());
+        FileUtils.deleteDirectory(testPath.toFile());
     }
 
     @Test

@@ -59,12 +59,6 @@ public class BaseResource {
             return null;
         }
 
-        try {
-            throw new Exception("HELLO THERE");
-        } catch (Exception e) {
-            log.error("oh my", e);
-        }
-
         var parameterParser = new ParameterParser();
         var parameters = parameterParser.parse(contentDisposition, ';');
 
