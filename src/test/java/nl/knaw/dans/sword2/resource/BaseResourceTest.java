@@ -71,7 +71,7 @@ class BaseResourceTest {
         assertEquals(-1, handler.getContentLength("prefix123"));
         assertEquals(-1, handler.getContentLength(null));
     }
-    
+
     @Test
     void testPackaging() {
         var errorResponseFactory = Mockito.mock(ErrorResponseFactory.class);
