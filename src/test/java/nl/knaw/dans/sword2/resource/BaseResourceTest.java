@@ -62,7 +62,7 @@ class BaseResourceTest {
     }
 
     @Test
-    void testContentLengthHeader() throws Exception {
+    void testContentLengthHeader() {
         var errorResponseFactory = Mockito.mock(ErrorResponseFactory.class);
         var handler = new BaseResource(errorResponseFactory);
         assertEquals(123, handler.getContentLength("123"));
@@ -71,8 +71,7 @@ class BaseResourceTest {
         assertEquals(-1, handler.getContentLength("prefix123"));
         assertEquals(-1, handler.getContentLength(null));
     }
-
-
+    
     @Test
     void testPackaging() {
         var errorResponseFactory = Mockito.mock(ErrorResponseFactory.class);
