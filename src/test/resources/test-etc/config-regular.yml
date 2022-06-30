@@ -61,7 +61,7 @@ sword2:
 # See https://www.dropwizard.io/en/latest/manual/configuration.html#logging
 #
 logging:
-  level: "off"
+  level: off
 
 health:
   delayedShutdownHandlerEnabled: false

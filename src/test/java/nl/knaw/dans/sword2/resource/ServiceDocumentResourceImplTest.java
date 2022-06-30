@@ -50,7 +50,6 @@ class ServiceDocumentResourceImplTest {
             .get();
 
         var serviceDocument = result.readEntity(ServiceDocument.class);
-//        printServiceDocument(serviceDocument);
 
         assertEquals("2.0", serviceDocument.getVersion());
         assertEquals(1,
@@ -76,15 +75,5 @@ class ServiceDocumentResourceImplTest {
 
         var checksum = result.getHeaderString("Content-MD5");
         assertEquals("1c62de3fac16661d834bd3c4b6318c96", checksum);
-    }
-
-    void printServiceDocument(ServiceDocument serviceDocument) throws JAXBException {
-        var ctx = JAXBContext.newInstance(ServiceDocument.class);
-        var marshaller = ctx.createMarshaller();
-        marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-        var writer = new StringWriter();
-        marshaller.marshal(serviceDocument, writer);
-        var str = writer.toString();
-        System.out.println(str);
     }
 }

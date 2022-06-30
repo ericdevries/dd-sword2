@@ -23,39 +23,25 @@ import nl.knaw.dans.sword2.DdSword2Configuration;
 import nl.knaw.dans.sword2.api.statement.Feed;
 import nl.knaw.dans.sword2.core.Deposit;
 import nl.knaw.dans.sword2.core.DepositState;
-import nl.knaw.dans.sword2.core.config.UserConfig;
 import nl.knaw.dans.sword2.core.exceptions.DepositNotFoundException;
 import nl.knaw.dans.sword2.core.exceptions.InvalidDepositException;
-import nl.knaw.dans.sword2.core.service.DepositHandler;
 import nl.knaw.dans.sword2.core.service.DepositPropertiesManagerImpl;
-import nl.knaw.dans.sword2.core.service.ErrorResponseFactory;
 import nl.knaw.dans.sword2.core.service.FileServiceImpl;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(DropwizardExtensionsSupport.class)
 class StatementResourceImplTest {
-    private static final DepositHandler depositHandler = Mockito.mock(DepositHandler.class);
-    private static final ErrorResponseFactory errorResponseFactory = Mockito.mock(ErrorResponseFactory.class);
-
-    private static final List<UserConfig> userConfig = List.of(new UserConfig("user001", "hash", true, List.of("1")));
-
     private DropwizardAppExtension<DdSword2Configuration> EXT = new DropwizardAppExtension<>(
         DdSword2Application.class,
         ResourceHelpers.resourceFilePath("test-etc/config-regular.yml")
@@ -65,8 +51,6 @@ class StatementResourceImplTest {
     void setUp() throws IOException {
         FileUtils.deleteDirectory(Path.of("data/tmp").toFile());
         new FileServiceImpl().ensureDirectoriesExist(Path.of("data/tmp/1"));
-
-        Mockito.reset(depositHandler);
     }
 
     @AfterEach
@@ -134,15 +118,5 @@ class StatementResourceImplTest {
             .get();
 
         assertEquals(400, response.getStatus());
-    }
-
-    void printStatement(Feed feed) throws JAXBException {
-        var ctx = JAXBContext.newInstance(Feed.class);
-        var marshaller = ctx.createMarshaller();
-        marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-        var writer = new StringWriter();
-        marshaller.marshal(feed, writer);
-        var str = writer.toString();
-        System.out.println(str);
     }
 }
