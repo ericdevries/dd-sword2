@@ -152,13 +152,14 @@ public class BagItManagerImpl implements BagItManager {
             var bagDir = getBagDir(path);
             var bag = getBag(bagDir);
             var ignoreHiddenFiles = true;
-            var verifier = new BagVerifier();
 
-            log.trace("Verifying bag is complete on path {}", bagDir);
-            verifier.isComplete(bag, ignoreHiddenFiles);
+            try (var verifier = new BagVerifier()) {
+                log.trace("Verifying bag is complete on path {}", bagDir);
+                verifier.isComplete(bag, ignoreHiddenFiles);
 
-            log.trace("Verifying bag is valid on path {}", bagDir);
-            verifier.isValid(bag, ignoreHiddenFiles);
+                log.trace("Verifying bag is valid on path {}", bagDir);
+                verifier.isValid(bag, ignoreHiddenFiles);
+            }
         }
         catch (Exception e) {
             throw new InvalidDepositException(e.getMessage(), e);

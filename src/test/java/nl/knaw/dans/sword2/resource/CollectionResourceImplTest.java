@@ -254,6 +254,7 @@ class CollectionResourceImplTest {
         var firstPath = Path.of("data/tmp/1/deposits/", id);
         assertTrue(Files.exists(firstPath.resolve("deposit.properties")));
         assertTrue(Files.exists(firstPath.resolve("audiences/bagit.txt")));
+        assertTrue(Files.exists(firstPath.resolve("audiences/original-filepaths.txt")));
         assertFalse(Files.exists(firstPath.resolve("bag.zip.1")));
         assertFalse(Files.exists(firstPath.resolve("bag.zip.2")));
         assertFalse(Files.exists(firstPath.resolve("bag.zip.3")));
