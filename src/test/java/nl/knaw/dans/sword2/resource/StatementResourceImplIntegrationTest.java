@@ -24,7 +24,6 @@ import nl.knaw.dans.sword2.DdSword2Configuration;
 import nl.knaw.dans.sword2.api.statement.Feed;
 import nl.knaw.dans.sword2.core.Deposit;
 import nl.knaw.dans.sword2.core.DepositState;
-import nl.knaw.dans.sword2.core.exceptions.DepositNotFoundException;
 import nl.knaw.dans.sword2.core.exceptions.InvalidDepositException;
 import nl.knaw.dans.sword2.core.service.DepositPropertiesManagerImpl;
 import nl.knaw.dans.sword2.core.service.FileServiceImpl;
@@ -62,7 +61,7 @@ class StatementResourceImplIntegrationTest {
     }
 
     @Test
-    void testStatement() throws DepositNotFoundException, InvalidDepositException {
+    void testStatement() throws InvalidDepositException {
         var deposit = new Deposit();
         deposit.setId("a03ca6f1-608b-4247-8c22-99681b8494a0");
         deposit.setCreated(OffsetDateTime.of(2022, 5, 1, 1, 2, 3, 4, ZoneOffset.UTC));
@@ -91,7 +90,7 @@ class StatementResourceImplIntegrationTest {
     }
 
     @Test
-    void testStatementForUnknownDeposit() throws DepositNotFoundException, InvalidDepositException {
+    void testStatementForUnknownDeposit() {
         var url = String.format("http://localhost:%s/statement/a03ca6f1-608b-4247-8c22-99681b8494a0", EXT.getLocalPort());
         var response = EXT.client()
             .target(url)
@@ -103,7 +102,7 @@ class StatementResourceImplIntegrationTest {
     }
 
     @Test
-    void testStatementForInvalidDeposit() throws DepositNotFoundException, InvalidDepositException {
+    void testStatementForInvalidDeposit() throws InvalidDepositException {
         var deposit = new Deposit();
         deposit.setId("a03ca6f1-608b-4247-8c22-99681b8494a0");
         deposit.setCreated(OffsetDateTime.of(2022, 5, 1, 1, 2, 3, 4, ZoneOffset.UTC));
@@ -120,7 +119,7 @@ class StatementResourceImplIntegrationTest {
             .header("Authorization", "Basic dXNlcjAwMTp1c2VyMDAx")
             .get();
 
-        assertEquals(500, response.getStatus());
+        assertEquals(200, response.getStatus());
 
         var feed = response.readEntity(Feed.class);
         assertEquals(DepositState.INVALID.toString(), feed.getCategory().getTerm());

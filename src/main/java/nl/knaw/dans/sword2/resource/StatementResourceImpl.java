@@ -74,7 +74,7 @@ public class StatementResourceImpl extends BaseResource implements StatementReso
 
             log.error("Deposit with id {} is invalid", depositId, e);
 
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+            return Response.status(Response.Status.OK)
                 .entity(feed)
                 .build();
         }
