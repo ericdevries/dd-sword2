@@ -116,7 +116,7 @@ public class DepositHandlerImpl implements DepositHandler {
         }
         catch (HashMismatchException | IOException | InvalidDepositException e) {
             // cleanup files
-//            cleanupFile(path);
+            cleanupFile(path);
             throw e;
         }
     }
