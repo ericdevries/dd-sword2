@@ -120,6 +120,9 @@ class StatementResourceImplIntegrationTest {
             .header("Authorization", "Basic dXNlcjAwMTp1c2VyMDAx")
             .get();
 
-        assertEquals(400, response.getStatus());
+        assertEquals(500, response.getStatus());
+
+        var feed = response.readEntity(Feed.class);
+        assertEquals(DepositState.INVALID.toString(), feed.getCategory().getTerm());
     }
 }

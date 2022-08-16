@@ -21,6 +21,7 @@ import nl.knaw.dans.sword2.api.statement.FeedAuthor;
 import nl.knaw.dans.sword2.api.statement.FeedCategory;
 import nl.knaw.dans.sword2.api.statement.TextElement;
 import nl.knaw.dans.sword2.auth.Depositor;
+import nl.knaw.dans.sword2.core.DepositState;
 import nl.knaw.dans.sword2.core.exceptions.DepositNotFoundException;
 import nl.knaw.dans.sword2.core.exceptions.InvalidDepositException;
 import nl.knaw.dans.sword2.core.service.DepositHandler;
@@ -49,30 +50,37 @@ public class StatementResourceImpl extends BaseResource implements StatementReso
     public Response getStatement(String depositId, HttpHeaders headers, Depositor depositor) {
         log.info("Received getStatement request for deposit with ID {} and user {}", depositId, depositor.getName());
 
+        var url = baseUrl.resolve("/statement/" + depositId).toString();
+        var feed = new Feed();
+        feed.setId(url);
+        feed.setTitle(new TextElement(String.format("Deposit %s", depositId), "text"));
+        feed.addLink(new Link(URI.create(url), "self", null));
+        feed.getAuthors().add(new FeedAuthor("DANS-EASY"));
+
         try {
             var deposit = depositHandler.getDeposit(depositId, depositor);
-            var url = baseUrl.resolve("/statement/" + depositId).toString();
-            var feed = new Feed();
 
-            feed.setId(url);
-            feed.setTitle(new TextElement(String.format("Deposit %s", depositId), "text"));
             feed.setUpdated(deposit.getCreated().toString());
-            feed.addLink(new Link(URI.create(url), "self", null));
             feed.setCategory(new FeedCategory("State", "http://purl.org/net/sword/terms/state",
                 deposit.getState().toString(), deposit.getStateDescription()));
-            feed.getAuthors().add(new FeedAuthor("DANS-EASY"));
 
             return Response.status(Response.Status.OK)
+                .entity(feed)
+                .build();
+        }
+        catch (InvalidDepositException e) {
+            feed.setCategory(new FeedCategory("State", "http://purl.org/net/sword/terms/state",
+                DepositState.INVALID.toString(), e.getMessage()));
+
+            log.error("Deposit with id {} is invalid", depositId, e);
+
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                 .entity(feed)
                 .build();
         }
         catch (DepositNotFoundException e) {
             log.error("Deposit with id {} could not be found", depositId, e);
             throw new WebApplicationException(404);
-        }
-        catch (InvalidDepositException e) {
-            log.error("Deposit with id {} is invalid", depositId, e);
-            throw new WebApplicationException(400);
         }
     }
 }
