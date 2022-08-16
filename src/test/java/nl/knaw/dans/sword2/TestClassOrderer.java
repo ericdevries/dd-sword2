@@ -29,11 +29,17 @@ public class TestClassOrderer implements ClassOrderer {
     @Override
     public void orderClasses(ClassOrdererContext classOrdererContext) {
         classOrdererContext.getClassDescriptors().sort((Comparator<ClassDescriptor>) (left, right) -> {
-            if (right.getDisplayName().endsWith("IntegrationTest")) {
+            var l = left.getDisplayName();
+            var r = right.getDisplayName();
+
+             if (!l.endsWith("IntegrationTest") && r.endsWith("IntegrationTest")) {
                 return -1;
             }
+            else if (l.endsWith("IntegrationTest") && !r.endsWith("IntegrationTest")) {
+                return 1;
+            }
 
-            return left.getDisplayName().compareTo(right.getDisplayName());
+            return l.compareTo(r);
         });
     }
 }
