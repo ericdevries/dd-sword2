@@ -72,6 +72,10 @@ users:
     # BCrypt encrypted password
     passwordHash: $2a$10$yvmSYczU7z4KL6qmRCTgTeSvo7uurwPUbB9s/mTKzJrYM/sQKgF.y
 
+    # The delegate that will perform a check with dataverse to verify credentials
+    # This property is mutually exclusive with passwordHash
+    # passwordDelegate: http://localhost:20000/
+
     # Collections that this user is allowed to send deposits to
     collections:
       - collection1

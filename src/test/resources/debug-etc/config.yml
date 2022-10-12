@@ -11,6 +11,8 @@ server:
 users:
   - name: 'user001'
     passwordHash: '$2a$10$yvmSYczU7z4KL6qmRCTgTeSvo7uurwPUbB9s/mTKzJrYM/sQKgF.y' # user001
+    # or
+    # passwordDelegate: http://localhost:20000/
     filepathMapping: true
     collections:
       - collection1
