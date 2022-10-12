@@ -34,7 +34,7 @@ public class Sword2Config {
     @NotEmpty
     private String emailAddress;
     @NotEmpty
-    private List<CollectionConfig> collections;
+    private List<@Valid  CollectionConfig> collections;
     @Valid
     @NotNull
     private Duration rescheduleDelay;

@@ -15,25 +15,44 @@
  */
 package nl.knaw.dans.sword2.core.config;
 
+import javax.validation.constraints.AssertTrue;
+import javax.validation.constraints.NotEmpty;
+import java.net.URL;
 import java.util.List;
 
 public class UserConfig {
+    @NotEmpty
+    private String name;
+    private String passwordHash;
+    private URL passwordDelegate;
+    private Boolean filepathMapping;
+    @NotEmpty
+    private List<String> collections;
 
     public UserConfig() {
 
     }
 
-    public UserConfig(String name, String passwordHash, Boolean filepathMapping, List<String> collections) {
+    public UserConfig(String name, String passwordHash, Boolean filepathMapping, List<String> collections, URL passwordDelegate) {
         this.name = name;
         this.passwordHash = passwordHash;
         this.filepathMapping = filepathMapping;
         this.collections = collections;
+        this.passwordDelegate = passwordDelegate;
     }
 
-    private String name;
-    private String passwordHash;
-    private Boolean filepathMapping;
-    private List<String> collections;
+    @AssertTrue(message = "either passwordHash or passwordDelegate must be set, but not both")
+    boolean isPasswordMethodsMutuallyExclusive() {
+        return this.passwordHash != null ^ this.passwordDelegate != null;
+    }
+
+    public URL getPasswordDelegate() {
+        return passwordDelegate;
+    }
+
+    public void setPasswordDelegate(URL passwordDelegate) {
+        this.passwordDelegate = passwordDelegate;
+    }
 
     public String getName() {
         return name;

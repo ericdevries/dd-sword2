@@ -20,6 +20,7 @@ import io.dropwizard.Application;
 import io.dropwizard.auth.AuthDynamicFeature;
 import io.dropwizard.auth.AuthValueFactoryProvider;
 import io.dropwizard.auth.basic.BasicCredentialAuthFilter;
+import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.forms.MultiPartBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
@@ -98,6 +99,9 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
 
         var depositFinalizerManager = new DepositFinalizerManager(finalizingExecutor, depositHandler, queue, rescheduleExecutor, configuration.getSword2().getRescheduleDelay());
 
+        var httpClient = new HttpClientBuilder(environment).using(configuration.getHttpClientConfiguration())
+            .build(getName());
+
         environment.jersey().register(MultiPartFeature.class);
 
         // Add a md5 output hash header
@@ -105,7 +109,7 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
 
         // Set up authentication
         environment.jersey().register(
-            new AuthDynamicFeature(new BasicCredentialAuthFilter.Builder<Depositor>().setAuthenticator(new SwordAuthenticator(configuration.getUsers())).setRealm("SWORD2").buildAuthFilter()));
+            new AuthDynamicFeature(new BasicCredentialAuthFilter.Builder<Depositor>().setAuthenticator(new SwordAuthenticator(configuration.getUsers(), httpClient)).setRealm("SWORD2").buildAuthFilter()));
 
         // For @Auth
         environment.jersey().register(new AuthValueFactoryProvider.Binder<>(Depositor.class));
