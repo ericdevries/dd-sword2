@@ -93,7 +93,7 @@ class SwordAuthenticatorTest {
         var userList = List.of(new UserConfig("user001", null, false, new ArrayList<>()));
 
         var protocol = new ProtocolVersion("http", 1, 1);
-        var status = new BasicStatusLine(protocol, 204, "No Content");
+        var status = new BasicStatusLine(protocol, 200, "No Content");
         var fakeResponse = new BasicHttpResponse(status, null, null);
 
         Mockito.when(httpClient.execute(Mockito.any()))
