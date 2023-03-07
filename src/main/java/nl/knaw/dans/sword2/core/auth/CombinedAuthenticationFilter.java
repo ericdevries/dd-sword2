@@ -28,15 +28,11 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.Base64;
-import java.util.HashSet;
-import java.util.Objects;
 
 @Priority(Priorities.AUTHENTICATION)
 public class CombinedAuthenticationFilter<P extends Principal> extends AuthFilter<CombinedCredentials, P> {
-    private String headerName;
 
-    public CombinedAuthenticationFilter(String headerName) {
-        this.headerName = headerName;
+    public CombinedAuthenticationFilter() {
     }
 
     @Override
@@ -51,11 +47,7 @@ public class CombinedAuthenticationFilter<P extends Principal> extends AuthFilte
 
     private CombinedCredentials getPrincipals(ContainerRequestContext requestContext) {
         var result = new CombinedCredentials();
-        var value = requestContext.getHeaders().getFirst(headerName);
-
-        if (value != null) {
-            result.setHeaderCredentials(new HeaderCredentials(value));
-        }
+        result.setHeaders(requestContext.getHeaders());
 
         var basicCredentials = getBasicCredentials(requestContext.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
 
@@ -106,16 +98,9 @@ public class CombinedAuthenticationFilter<P extends Principal> extends AuthFilte
     public static class Builder<P extends Principal> extends
         AuthFilterBuilder<CombinedCredentials, P, CombinedAuthenticationFilter<P>> {
 
-        private String headerName;
-
-        public Builder<P> setHeaderName(String headerName) {
-            this.headerName = headerName;
-            return this;
-        }
-
         @Override
         protected CombinedAuthenticationFilter<P> newInstance() {
-            return new CombinedAuthenticationFilter<>(headerName);
+            return new CombinedAuthenticationFilter<>();
         }
     }
 }

@@ -17,17 +17,18 @@ package nl.knaw.dans.sword2.core.auth;
 
 import io.dropwizard.auth.basic.BasicCredentials;
 
+import javax.ws.rs.core.MultivaluedMap;
+
 public class CombinedCredentials {
     private BasicCredentials basicCredentials;
-    private HeaderCredentials headerCredentials;
+    private MultivaluedMap<String, String> headers;
 
     public CombinedCredentials() {
 
     }
 
-    public CombinedCredentials(BasicCredentials basicCredentials, HeaderCredentials headerCredentials) {
+    public CombinedCredentials(BasicCredentials basicCredentials, MultivaluedMap<String, String> headers) {
         this.basicCredentials = basicCredentials;
-        this.headerCredentials = headerCredentials;
     }
 
     public BasicCredentials getBasicCredentials() {
@@ -38,11 +39,11 @@ public class CombinedCredentials {
         this.basicCredentials = basicCredentials;
     }
 
-    public HeaderCredentials getHeaderCredentials() {
-        return headerCredentials;
+    public MultivaluedMap<String, String> getHeaders() {
+        return headers;
     }
 
-    public void setHeaderCredentials(HeaderCredentials headerCredentials) {
-        this.headerCredentials = headerCredentials;
+    public void setHeaders(MultivaluedMap<String, String> headers) {
+        this.headers = headers;
     }
 }

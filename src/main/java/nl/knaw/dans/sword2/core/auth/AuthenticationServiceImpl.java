@@ -17,8 +17,6 @@ package nl.knaw.dans.sword2.core.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dropwizard.auth.AuthenticationException;
-import io.dropwizard.auth.basic.BasicCredentials;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
@@ -26,48 +24,36 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.core.MultivaluedMap;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
-public class DataverseAuthenticationServiceImpl implements DataverseAuthenticationService {
-    private static final Logger log = LoggerFactory.getLogger(DataverseAuthenticationServiceImpl.class);
+public class AuthenticationServiceImpl implements AuthenticationService {
+    private static final Logger log = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
     private final URL passwordDelegate;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
 
-    public DataverseAuthenticationServiceImpl(URL passwordDelegate, HttpClient httpClient, ObjectMapper objectMapper) {
+    public AuthenticationServiceImpl(URL passwordDelegate, HttpClient httpClient, ObjectMapper objectMapper) {
         this.passwordDelegate = passwordDelegate;
         this.httpClient = httpClient;
         this.objectMapper = objectMapper;
     }
 
     @Override
-    public Optional<String> authenticateWithHeader(String value) throws AuthenticationException {
+    public Optional<String> authenticateWithHeaders(MultivaluedMap<String, String> headers) throws AuthenticationException {
         try {
-            var post = new HttpPost(passwordDelegate.toURI());
-            post.setHeader("X-Dataverse-Key", value);
+            var request = new HttpPost(passwordDelegate.toURI());
 
-            return doRequest(post);
-        }
-        catch (URISyntaxException | IOException e) {
-            throw new AuthenticationException("Unable to validate credentials", e);
-        }
-    }
+            for (var entry : headers.entrySet()) {
+                if (entry.getValue().size() > 0) {
+                    request.setHeader(entry.getKey(), entry.getValue().get(0));
+                }
+            }
 
-    @Override
-    public Optional<String> authenticateWithBasic(BasicCredentials basicCredentials) throws AuthenticationException {
-        var auth = basicCredentials.getUsername() + ":" + basicCredentials.getPassword();
-        var encodedAuth = Base64.encodeBase64(auth.getBytes(StandardCharsets.UTF_8));
-        var header = String.format("Basic %s", new String(encodedAuth, StandardCharsets.UTF_8));
-
-        try {
-            var post = new HttpPost(passwordDelegate.toURI());
-            post.setHeader("Authorization", header);
-
-            return doRequest(post);
+            return doRequest(request);
         }
         catch (URISyntaxException | IOException e) {
             throw new AuthenticationException("Unable to validate credentials", e);

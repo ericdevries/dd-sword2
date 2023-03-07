@@ -15,21 +15,13 @@
  */
 package nl.knaw.dans.sword2.core.auth;
 
-public class HeaderCredentials {
-    private final String value;
+import io.dropwizard.auth.AuthenticationException;
 
-    public HeaderCredentials(String value) {
-        this.value = value;
-    }
+import javax.ws.rs.core.MultivaluedMap;
+import java.util.Optional;
 
-    public String getValue() {
-        return value;
-    }
+public interface AuthenticationService {
 
-    @Override
-    public String toString() {
-        return "HeaderCredentials{" +
-            "value='" + value + '\'' +
-            '}';
-    }
+    Optional<String> authenticateWithHeaders(MultivaluedMap<String, String> headers) throws AuthenticationException;
+
 }

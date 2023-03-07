@@ -17,66 +17,68 @@ package nl.knaw.dans.sword2.core.auth;
 
 import io.dropwizard.auth.AuthenticationException;
 import io.dropwizard.auth.Authenticator;
-import io.dropwizard.auth.basic.BasicCredentials;
 import nl.knaw.dans.sword2.core.config.AuthorizationConfig;
+import nl.knaw.dans.sword2.core.config.UserConfig;
 import org.mindrot.jbcrypt.BCrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-public class SwordAuthenticator implements Authenticator<BasicCredentials, Depositor> {
+public class SwordAuthenticator implements Authenticator<CombinedCredentials, Depositor> {
 
     private static final Logger log = LoggerFactory.getLogger(SwordAuthenticator.class);
 
     private final AuthorizationConfig authorizationConfig;
 
-    private final DataverseAuthenticationService dataverseAuthenticationService;
+    private final AuthenticationService authenticationService;
 
-    public SwordAuthenticator(AuthorizationConfig authorizationConfig, DataverseAuthenticationService dataverseAuthenticationService) {
+    public SwordAuthenticator(AuthorizationConfig authorizationConfig, AuthenticationService authenticationService) {
         this.authorizationConfig = authorizationConfig;
-        this.dataverseAuthenticationService = dataverseAuthenticationService;
+        this.authenticationService = authenticationService;
     }
 
     @Override
-    public Optional<Depositor> authenticate(BasicCredentials credentials) throws AuthenticationException {
-        var userList = authorizationConfig.getUsers();
-        var passwordDelegate = authorizationConfig.getPasswordDelegate();
+    public Optional<Depositor> authenticate(CombinedCredentials credentials) throws AuthenticationException {
+        // if basic credentials are provided, check if we know this user
+        if (credentials.getBasicCredentials() != null) {
+            var user = getUserByName(credentials.getBasicCredentials().getUsername());
 
-        var user = userList.stream()
-            .filter(u -> u.getName().equals(credentials.getUsername()))
-            .findFirst();
+            if (user.isEmpty()) {
+                log.debug("No matching users found for provided credentials with username {}", credentials.getBasicCredentials().getUsername());
+                return Optional.empty();
+            }
 
-        if (user.isEmpty()) {
-            log.debug("No matching users found for provided credentials with username {}", credentials.getUsername());
-            return Optional.empty();
-        }
+            // the user is found, now check if we should do a local password check
+            var userConfig = user.get();
 
-        var userConfig = user.get();
+            if (userConfig.getPasswordHash() != null) {
+                log.debug("User is configured with a password hash, validating password for user {}", userConfig.getName());
 
-        log.debug("Authenticating user {}", credentials.getUsername());
-
-        if (userConfig.getPasswordHash() != null) {
-            log.debug("Using password hash to authenticate user {}", userConfig.getName());
-            if (BCrypt.checkpw(credentials.getPassword(), userConfig.getPasswordHash())) {
-                return Optional.of(new Depositor(userConfig.getName(), userConfig.getFilepathMapping(), Set.copyOf(userConfig.getCollections())));
+                // always return a value if there is a password hash, even if it does not match
+                if (BCrypt.checkpw(credentials.getBasicCredentials().getPassword(), userConfig.getPasswordHash())) {
+                    return Optional.of(new Depositor(userConfig.getName(), userConfig.getFilepathMapping(), Set.copyOf(userConfig.getCollections())));
+                }
+                else {
+                    return Optional.empty();
+                }
             }
         }
-        else if (passwordDelegate != null) {
-            log.debug("Using delegate {} to authenticate user {}", passwordDelegate, userConfig.getName());
-            if (validatePasswordWithDelegate(credentials)) {
-                return Optional.of(new Depositor(userConfig.getName(), userConfig.getFilepathMapping(), Set.copyOf(userConfig.getCollections())));
-            }
-        }
-        else {
-            log.warn("No valid authentication mechanism configured for user {}", userConfig.getName());
-        }
 
-        return Optional.empty();
+        log.debug("No basic credentials provided, or not configured with a local password; forwarding request to passwordDelegate");
+
+        // no basic credentials, or user was not configured with a password hash, forward request to password delegate
+        return authenticationService.authenticateWithHeaders(credentials.getHeaders())
+            .map(this::getUserByName)
+            .flatMap(f -> f)
+            .map(u -> new Depositor(u.getName(), u.getFilepathMapping(), new HashSet<>(u.getCollections())));
     }
 
-    boolean validatePasswordWithDelegate(BasicCredentials basicCredentials) throws AuthenticationException {
-        return dataverseAuthenticationService.authenticateWithBasic(basicCredentials).isPresent();
+    Optional<UserConfig> getUserByName(String name) {
+        return authorizationConfig.getUsers().stream()
+            .filter(u -> u.getName().equals(name))
+            .findFirst();
     }
 }

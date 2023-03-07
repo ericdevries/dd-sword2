@@ -25,11 +25,9 @@ import io.dropwizard.configuration.SubstitutingSourceProvider;
 import io.dropwizard.forms.MultiPartBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import nl.knaw.dans.sword2.core.auth.AuthenticationServiceImpl;
 import nl.knaw.dans.sword2.core.auth.CombinedAuthenticationFilter;
-import nl.knaw.dans.sword2.core.auth.CombinedAuthenticator;
-import nl.knaw.dans.sword2.core.auth.DataverseAuthenticationServiceImpl;
 import nl.knaw.dans.sword2.core.auth.Depositor;
-import nl.knaw.dans.sword2.core.auth.HeaderAuthenticator;
 import nl.knaw.dans.sword2.core.auth.SwordAuthenticator;
 import nl.knaw.dans.sword2.core.finalizer.DepositFinalizerEvent;
 import nl.knaw.dans.sword2.core.finalizer.DepositFinalizerManager;
@@ -114,15 +112,14 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
         // Add a md5 output hash header
         environment.jersey().register(HashHeaderInterceptor.class);
 
-        var dataverseAuthenticator = new DataverseAuthenticationServiceImpl(configuration.getAuthorization().getPasswordDelegate(), httpClient, environment.getObjectMapper());
-        var headerAuthenticator = new HeaderAuthenticator(configuration.getAuthorization(), dataverseAuthenticator);
-        var swordAuthenticator = new SwordAuthenticator(configuration.getAuthorization(), dataverseAuthenticator);
+        var dataverseAuthenticator = new AuthenticationServiceImpl(configuration.getAuthorization().getPasswordDelegate(), httpClient, environment.getObjectMapper());
+//        var headerAuthenticator = new HeaderAuthenticator(configuration.getAuthorization(), dataverseAuthenticator);
+//        var swordAuthenticator = new SwordAuthenticator(configuration.getAuthorization(), dataverseAuthenticator);
 
         environment.jersey().register(new AuthDynamicFeature(
             new CombinedAuthenticationFilter.Builder<Depositor>()
-                .setHeaderName("X-Dataverse-Key")
                 .setRealm("Dataverse")
-                .setAuthenticator(new CombinedAuthenticator(swordAuthenticator, headerAuthenticator))
+                .setAuthenticator(new SwordAuthenticator(configuration.getAuthorization(), dataverseAuthenticator))
                 .buildAuthFilter()
         ));
 

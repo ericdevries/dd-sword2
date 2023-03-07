@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.mindrot.jbcrypt.BCrypt;
 import org.mockito.Mockito;
 
+import javax.ws.rs.core.MultivaluedHashMap;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -37,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SwordAuthenticatorTest {
 
-    private final DataverseAuthenticationService authenticationService = Mockito.mock(DataverseAuthenticationService.class);
+    private final AuthenticationService authenticationService = Mockito.mock(AuthenticationService.class);
     private final URL passwordDelegate = new URL("http://test.com/");
 
     SwordAuthenticatorTest() throws MalformedURLException {
@@ -56,12 +57,24 @@ class SwordAuthenticatorTest {
         return new SwordAuthenticator(config, authenticationService);
     }
 
+    CombinedCredentials buildCredentials(String username, String password, String header) {
+        var basic = username != null ? new BasicCredentials(username, password) : null;
+        var headers = new MultivaluedHashMap<String, String>();
+
+        if (header != null) {
+            headers.put("x-dataverse-key", List.of(header));
+        }
+
+        return new CombinedCredentials(basic, headers);
+    }
+
     @Test
     void authenticate_should_return_empty_optional_if_no_users_are_configured() {
         var emptyList = new ArrayList<UserConfig>();
 
         var result = assertDoesNotThrow(() ->
-            getAuthenticator(List.of()).authenticate(new BasicCredentials("user", "password")
+            getAuthenticator(List.of()).authenticate(
+                buildCredentials("user", "password", null)
             ));
 
         assertTrue(result.isEmpty());
@@ -72,7 +85,9 @@ class SwordAuthenticatorTest {
         var password = BCrypt.hashpw("password", BCrypt.gensalt());
         var userList = List.of(new UserConfig("user001", password, false, new ArrayList<>()));
 
-        assertTrue(getAuthenticator(userList).authenticate(new BasicCredentials("user001", "different_password")).isEmpty());
+        assertTrue(getAuthenticator(userList).authenticate(
+            buildCredentials("user001", "different_password", null)
+        ).isEmpty());
     }
 
     @Test
@@ -80,28 +95,35 @@ class SwordAuthenticatorTest {
         var password = BCrypt.hashpw("password", BCrypt.gensalt());
         var userList = List.of(new UserConfig("user001", password, false, new ArrayList<>()));
 
-        assertEquals("user001", getAuthenticator(userList).authenticate(new BasicCredentials("user001", "password")).get().getName());
+        assertEquals("user001", getAuthenticator(userList).authenticate(
+            buildCredentials("user001", "password", null)
+        ).get().getName());
     }
 
     @Test
     void authenticate_should_call_delegate_http_service_if_config_says_so() throws AuthenticationException {
         var userList = List.of(new UserConfig("user001", null, false, new ArrayList<>()));
 
-        Mockito.when(authenticationService.authenticateWithBasic(Mockito.any()))
+        Mockito.when(authenticationService.authenticateWithHeaders(Mockito.any()))
             .thenReturn(Optional.of("user001"));
 
-        assertEquals("user001", getAuthenticator(userList).authenticate(new BasicCredentials("user001", "password")).get().getName());
+        assertEquals("user001", getAuthenticator(userList).authenticate(
+            buildCredentials("user001", "password", null)
+        ).get().getName());
     }
 
     @Test
     void authenticate_should_return_empty_optional_if_delegate_returns_401_unauthorized() throws AuthenticationException {
         var userList = List.of(new UserConfig("user001", null, false, new ArrayList<>()));
 
-        Mockito.when(authenticationService.authenticateWithBasic(Mockito.any()))
+        Mockito.when(authenticationService.authenticateWithHeaders(Mockito.any()))
             .thenReturn(Optional.empty());
 
         assertTrue(getAuthenticator(userList)
-            .authenticate(new BasicCredentials("user001", "password")).isEmpty());
+            .authenticate(
+                buildCredentials("user001", "password", null)
+            ).isEmpty());
+
     }
 
     @Test
@@ -109,9 +131,12 @@ class SwordAuthenticatorTest {
         var userList = List.of(new UserConfig("user001", null, false, new ArrayList<>()));
 
         Mockito.doThrow(AuthenticationException.class)
-            .when(authenticationService).authenticateWithBasic(Mockito.any());
+            .when(authenticationService).authenticateWithHeaders(Mockito.any());
 
         assertThrows(AuthenticationException.class, () -> getAuthenticator(userList)
-            .authenticate(new BasicCredentials("user001", "password")));
+            .authenticate(
+                buildCredentials("user001", "password", null)
+            )
+        );
     }
 }
