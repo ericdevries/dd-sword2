@@ -18,7 +18,7 @@ package nl.knaw.dans.sword2.core.auth;
 import io.dropwizard.auth.AuthenticationException;
 import io.dropwizard.auth.Authenticator;
 import io.dropwizard.auth.basic.BasicCredentials;
-import nl.knaw.dans.sword2.core.config.UserConfig;
+import nl.knaw.dans.sword2.core.config.AuthorizationConfig;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -38,37 +37,48 @@ public class SwordAuthenticator implements Authenticator<BasicCredentials, Depos
 
     private static final Logger log = LoggerFactory.getLogger(SwordAuthenticator.class);
 
-    private final List<UserConfig> userList;
     private final HttpClient httpClient;
+    private final AuthorizationConfig authorizationConfig;
 
-    public SwordAuthenticator(List<UserConfig> userList, HttpClient httpClient) {
-        this.userList = userList;
+    public SwordAuthenticator(AuthorizationConfig authorizationConfig, HttpClient httpClient) {
+        this.authorizationConfig = authorizationConfig;
         this.httpClient = httpClient;
     }
 
     @Override
     public Optional<Depositor> authenticate(BasicCredentials credentials) throws AuthenticationException {
-        //FIXME: refactor this: first get the user config, then authenticate. Also make sure the some other response status than 204 or 401 leads to a clear error message
-        for (var user : userList) {
-            if (user.getName().equals(credentials.getUsername())) {
-                log.debug("Authenticating user {}", credentials.getUsername());
+        var userList = authorizationConfig.getUsers();
+        var passwordDelegate = authorizationConfig.getPasswordDelegate();
 
-                if (user.getPasswordDelegate() != null) {
-                    log.debug("Using delegate {} to authenticate user {}", user.getPasswordDelegate(), user.getName());
-                    if (validatePasswordWithDelegate(credentials, user.getPasswordDelegate())) {
-                        return Optional.of(new Depositor(user.getName(), user.getFilepathMapping(), Set.copyOf(user.getCollections())));
-                    }
-                }
-                else if (user.getPasswordHash() != null) {
-                    log.debug("Using password hash to authenticate user {}", user.getName());
-                    if (BCrypt.checkpw(credentials.getPassword(), user.getPasswordHash())) {
-                        return Optional.of(new Depositor(user.getName(), user.getFilepathMapping(), Set.copyOf(user.getCollections())));
-                    }
-                }
-            }
+        var user = userList.stream()
+            .filter(u -> u.getName().equals(credentials.getUsername()))
+            .findFirst();
+
+        if (user.isEmpty()) {
+            log.debug("No matching users found for provided credentials with username {}", credentials.getUsername());
+            return Optional.empty();
         }
 
-        log.debug("No matching users found for provided credentials with username {}", credentials.getUsername());
+        var userConfig = user.get();
+
+        log.debug("Authenticating user {}", credentials.getUsername());
+
+        if (userConfig.getPasswordHash() != null) {
+            log.debug("Using password hash to authenticate user {}", userConfig.getName());
+            if (BCrypt.checkpw(credentials.getPassword(), userConfig.getPasswordHash())) {
+                return Optional.of(new Depositor(userConfig.getName(), userConfig.getFilepathMapping(), Set.copyOf(userConfig.getCollections())));
+            }
+        }
+        else if (passwordDelegate != null) {
+            log.debug("Using delegate {} to authenticate user {}", passwordDelegate, userConfig.getName());
+            if (validatePasswordWithDelegate(credentials, passwordDelegate)) {
+                return Optional.of(new Depositor(userConfig.getName(), userConfig.getFilepathMapping(), Set.copyOf(userConfig.getCollections())));
+            }
+        }
+        else {
+            log.warn("No valid authentication mechanism configured for user {}", userConfig.getName());
+        }
+
         return Optional.empty();
     }
 
@@ -82,8 +92,18 @@ public class SwordAuthenticator implements Authenticator<BasicCredentials, Depos
             post.setHeader("Authorization", header);
 
             var response = httpClient.execute(post);
-
-            return response.getStatusLine().getStatusCode() == 204;
+            var status = response.getStatusLine().getStatusCode();
+            log.debug("Delegate returned status code {}", status);
+            switch (status) {
+                case 200:
+                    return true;
+                case 401:
+                    return false;
+                default:
+                    throw new AuthenticationException(String.format(
+                        "Unexpected status code returned: %s (message: %s)", status, response.getStatusLine().getReasonPhrase()
+                    ));
+            }
         }
         catch (URISyntaxException | IOException e) {
             throw new AuthenticationException("Unable to perform authentication check with delegate", e);

@@ -12,12 +12,13 @@ server:
   requestLog:
     appenders: [ ]
 
-users:
-  - name: 'user001'
-    passwordHash: '$2a$10$yvmSYczU7z4KL6qmRCTgTeSvo7uurwPUbB9s/mTKzJrYM/sQKgF.y' # user001
-    filepathMapping: true
-    collections:
-      - collection1
+authorization:
+  users:
+    - name: 'user001'
+      passwordHash: '$2a$10$yvmSYczU7z4KL6qmRCTgTeSvo7uurwPUbB9s/mTKzJrYM/sQKgF.y' # user001
+      filepathMapping: true
+      collections:
+        - collection1
 
 sword2:
   baseUrl: 'http://localhost:20320/'

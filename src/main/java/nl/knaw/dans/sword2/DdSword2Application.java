@@ -19,14 +19,16 @@ package nl.knaw.dans.sword2;
 import io.dropwizard.Application;
 import io.dropwizard.auth.AuthDynamicFeature;
 import io.dropwizard.auth.AuthValueFactoryProvider;
-import io.dropwizard.auth.basic.BasicCredentialAuthFilter;
 import io.dropwizard.client.HttpClientBuilder;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
 import io.dropwizard.forms.MultiPartBundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import nl.knaw.dans.sword2.core.auth.CombinedAuthenticationFilter;
+import nl.knaw.dans.sword2.core.auth.CombinedAuthenticator;
 import nl.knaw.dans.sword2.core.auth.Depositor;
+import nl.knaw.dans.sword2.core.auth.HeaderAuthenticator;
 import nl.knaw.dans.sword2.core.auth.SwordAuthenticator;
 import nl.knaw.dans.sword2.core.finalizer.DepositFinalizerEvent;
 import nl.knaw.dans.sword2.core.finalizer.DepositFinalizerManager;
@@ -71,7 +73,7 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
     public void initialize(final Bootstrap<DdSword2Configuration> bootstrap) {
         bootstrap.addBundle(new MultiPartBundle());
         bootstrap.setConfigurationSourceProvider(new SubstitutingSourceProvider(bootstrap.getConfigurationSourceProvider(),
-                new EnvironmentVariableSubstitutor(false)));
+            new EnvironmentVariableSubstitutor(false)));
     }
 
     @Override
@@ -84,7 +86,7 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
         var errorResponseFactory = new ErrorResponseFactoryImpl();
 
         var bagItManager = new BagItManagerImpl(fileService, checksumCalculator);
-        var userManager = new UserManagerImpl(configuration.getUsers());
+        var userManager = new UserManagerImpl(configuration.getAuthorization().getUsers());
 
         var finalizingExecutor = configuration.getSword2().getFinalizingQueue().build(environment);
         var rescheduleExecutor = configuration.getSword2().getRescheduleQueue().build(environment);
@@ -111,9 +113,16 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
         // Add a md5 output hash header
         environment.jersey().register(HashHeaderInterceptor.class);
 
-        // Set up authentication
-        environment.jersey().register(
-            new AuthDynamicFeature(new BasicCredentialAuthFilter.Builder<Depositor>().setAuthenticator(new SwordAuthenticator(configuration.getUsers(), httpClient)).setRealm("SWORD2").buildAuthFilter()));
+        var headerAuthenticator = new HeaderAuthenticator(configuration.getAuthorization(), httpClient, environment.getObjectMapper());
+        var swordAuthenticator = new SwordAuthenticator(configuration.getAuthorization(), httpClient);
+
+        environment.jersey().register(new AuthDynamicFeature(
+            new CombinedAuthenticationFilter.Builder<Depositor>()
+                .setHeaderName("X-Dataverse-Key")
+                .setRealm("Dataverse")
+                .setAuthenticator(new CombinedAuthenticator(swordAuthenticator, headerAuthenticator))
+                .buildAuthFilter()
+        ));
 
         // For @Auth
         environment.jersey().register(new AuthValueFactoryProvider.Binder<>(Depositor.class));
