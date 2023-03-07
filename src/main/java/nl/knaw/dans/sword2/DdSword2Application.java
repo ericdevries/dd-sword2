@@ -27,6 +27,7 @@ import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import nl.knaw.dans.sword2.core.auth.CombinedAuthenticationFilter;
 import nl.knaw.dans.sword2.core.auth.CombinedAuthenticator;
+import nl.knaw.dans.sword2.core.auth.DataverseAuthenticationServiceImpl;
 import nl.knaw.dans.sword2.core.auth.Depositor;
 import nl.knaw.dans.sword2.core.auth.HeaderAuthenticator;
 import nl.knaw.dans.sword2.core.auth.SwordAuthenticator;
@@ -113,8 +114,9 @@ public class DdSword2Application extends Application<DdSword2Configuration> {
         // Add a md5 output hash header
         environment.jersey().register(HashHeaderInterceptor.class);
 
-        var headerAuthenticator = new HeaderAuthenticator(configuration.getAuthorization(), httpClient, environment.getObjectMapper());
-        var swordAuthenticator = new SwordAuthenticator(configuration.getAuthorization(), httpClient);
+        var dataverseAuthenticator = new DataverseAuthenticationServiceImpl(configuration.getAuthorization().getPasswordDelegate(), httpClient, environment.getObjectMapper());
+        var headerAuthenticator = new HeaderAuthenticator(configuration.getAuthorization(), dataverseAuthenticator);
+        var swordAuthenticator = new SwordAuthenticator(configuration.getAuthorization(), dataverseAuthenticator);
 
         environment.jersey().register(new AuthDynamicFeature(
             new CombinedAuthenticationFilter.Builder<Depositor>()

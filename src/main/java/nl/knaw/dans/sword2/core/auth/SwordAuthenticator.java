@@ -19,17 +19,10 @@ import io.dropwizard.auth.AuthenticationException;
 import io.dropwizard.auth.Authenticator;
 import io.dropwizard.auth.basic.BasicCredentials;
 import nl.knaw.dans.sword2.core.config.AuthorizationConfig;
-import org.apache.commons.codec.binary.Base64;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
 import org.mindrot.jbcrypt.BCrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.Set;
 
@@ -37,12 +30,13 @@ public class SwordAuthenticator implements Authenticator<BasicCredentials, Depos
 
     private static final Logger log = LoggerFactory.getLogger(SwordAuthenticator.class);
 
-    private final HttpClient httpClient;
     private final AuthorizationConfig authorizationConfig;
 
-    public SwordAuthenticator(AuthorizationConfig authorizationConfig, HttpClient httpClient) {
+    private final DataverseAuthenticationService dataverseAuthenticationService;
+
+    public SwordAuthenticator(AuthorizationConfig authorizationConfig, DataverseAuthenticationService dataverseAuthenticationService) {
         this.authorizationConfig = authorizationConfig;
-        this.httpClient = httpClient;
+        this.dataverseAuthenticationService = dataverseAuthenticationService;
     }
 
     @Override
@@ -71,7 +65,7 @@ public class SwordAuthenticator implements Authenticator<BasicCredentials, Depos
         }
         else if (passwordDelegate != null) {
             log.debug("Using delegate {} to authenticate user {}", passwordDelegate, userConfig.getName());
-            if (validatePasswordWithDelegate(credentials, passwordDelegate)) {
+            if (validatePasswordWithDelegate(credentials)) {
                 return Optional.of(new Depositor(userConfig.getName(), userConfig.getFilepathMapping(), Set.copyOf(userConfig.getCollections())));
             }
         }
@@ -82,31 +76,7 @@ public class SwordAuthenticator implements Authenticator<BasicCredentials, Depos
         return Optional.empty();
     }
 
-    boolean validatePasswordWithDelegate(BasicCredentials basicCredentials, URL passwordDelegate) throws AuthenticationException {
-        try {
-            var auth = basicCredentials.getUsername() + ":" + basicCredentials.getPassword();
-            var encodedAuth = Base64.encodeBase64(auth.getBytes(StandardCharsets.UTF_8));
-            var header = String.format("Basic %s", new String(encodedAuth, StandardCharsets.UTF_8));
-
-            var post = new HttpPost(passwordDelegate.toURI());
-            post.setHeader("Authorization", header);
-
-            var response = httpClient.execute(post);
-            var status = response.getStatusLine().getStatusCode();
-            log.debug("Delegate returned status code {}", status);
-            switch (status) {
-                case 200:
-                    return true;
-                case 401:
-                    return false;
-                default:
-                    throw new AuthenticationException(String.format(
-                        "Unexpected status code returned: %s (message: %s)", status, response.getStatusLine().getReasonPhrase()
-                    ));
-            }
-        }
-        catch (URISyntaxException | IOException e) {
-            throw new AuthenticationException("Unable to perform authentication check with delegate", e);
-        }
+    boolean validatePasswordWithDelegate(BasicCredentials basicCredentials) throws AuthenticationException {
+        return dataverseAuthenticationService.authenticateWithBasic(basicCredentials).isPresent();
     }
 }

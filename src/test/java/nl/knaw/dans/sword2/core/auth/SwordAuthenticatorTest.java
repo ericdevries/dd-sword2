@@ -13,27 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.sword2.auth;
+package nl.knaw.dans.sword2.core.auth;
 
 import io.dropwizard.auth.AuthenticationException;
 import io.dropwizard.auth.basic.BasicCredentials;
-import nl.knaw.dans.sword2.core.auth.SwordAuthenticator;
 import nl.knaw.dans.sword2.core.config.AuthorizationConfig;
 import nl.knaw.dans.sword2.core.config.UserConfig;
-import org.apache.http.ProtocolVersion;
-import org.apache.http.client.HttpClient;
-import org.apache.http.message.BasicHttpResponse;
-import org.apache.http.message.BasicStatusLine;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mindrot.jbcrypt.BCrypt;
 import org.mockito.Mockito;
 
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SwordAuthenticatorTest {
 
-    private final HttpClient httpClient = Mockito.mock(HttpClient.class);
+    private final DataverseAuthenticationService authenticationService = Mockito.mock(DataverseAuthenticationService.class);
     private final URL passwordDelegate = new URL("http://test.com/");
 
     SwordAuthenticatorTest() throws MalformedURLException {
@@ -50,7 +45,7 @@ class SwordAuthenticatorTest {
 
     @BeforeEach
     void setUp() {
-        Mockito.reset(httpClient);
+        Mockito.reset(authenticationService);
     }
 
     SwordAuthenticator getAuthenticator(List<UserConfig> users) {
@@ -58,7 +53,7 @@ class SwordAuthenticatorTest {
         config.setUsers(users);
         config.setPasswordDelegate(passwordDelegate);
 
-        return new SwordAuthenticator(config, httpClient);
+        return new SwordAuthenticator(config, authenticationService);
     }
 
     @Test
@@ -89,44 +84,32 @@ class SwordAuthenticatorTest {
     }
 
     @Test
-    void authenticate_should_call_delegate_http_service_if_config_says_so() throws AuthenticationException, IOException {
+    void authenticate_should_call_delegate_http_service_if_config_says_so() throws AuthenticationException {
         var userList = List.of(new UserConfig("user001", null, false, new ArrayList<>()));
 
-        var protocol = new ProtocolVersion("http", 1, 1);
-        var status = new BasicStatusLine(protocol, 200, "No Content");
-        var fakeResponse = new BasicHttpResponse(status, null, null);
-
-        Mockito.when(httpClient.execute(Mockito.any()))
-            .thenReturn(fakeResponse);
+        Mockito.when(authenticationService.authenticateWithBasic(Mockito.any()))
+            .thenReturn(Optional.of("user001"));
 
         assertEquals("user001", getAuthenticator(userList).authenticate(new BasicCredentials("user001", "password")).get().getName());
     }
 
     @Test
-    void authenticate_should_return_empty_optional_if_delegate_returns_401_unauthorized() throws AuthenticationException, IOException {
+    void authenticate_should_return_empty_optional_if_delegate_returns_401_unauthorized() throws AuthenticationException {
         var userList = List.of(new UserConfig("user001", null, false, new ArrayList<>()));
 
-        var protocol = new ProtocolVersion("http", 1, 1);
-        var status = new BasicStatusLine(protocol, 401, "Unauthorized");
-        var fakeResponse = new BasicHttpResponse(status, null, null);
-
-        Mockito.when(httpClient.execute(Mockito.any()))
-            .thenReturn(fakeResponse);
+        Mockito.when(authenticationService.authenticateWithBasic(Mockito.any()))
+            .thenReturn(Optional.empty());
 
         assertTrue(getAuthenticator(userList)
             .authenticate(new BasicCredentials("user001", "password")).isEmpty());
     }
 
     @Test
-    void authenticate_should_return_empty_optional_if_delegate_returns_500_error() throws AuthenticationException, IOException {
+    void authenticate_should_propagate_AuthenticationException() throws AuthenticationException {
         var userList = List.of(new UserConfig("user001", null, false, new ArrayList<>()));
 
-        var protocol = new ProtocolVersion("http", 1, 1);
-        var status = new BasicStatusLine(protocol, 500, "Internal Server Error");
-        var fakeResponse = new BasicHttpResponse(status, null, null);
-
-        Mockito.when(httpClient.execute(Mockito.any()))
-            .thenReturn(fakeResponse);
+        Mockito.doThrow(AuthenticationException.class)
+            .when(authenticationService).authenticateWithBasic(Mockito.any());
 
         assertThrows(AuthenticationException.class, () -> getAuthenticator(userList)
             .authenticate(new BasicCredentials("user001", "password")));
