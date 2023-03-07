@@ -22,6 +22,13 @@ import java.util.Optional;
 
 public interface AuthenticationService {
 
+    /**
+     * Sends a request to another service and returns the userId that the service sends back, if applicable
+     *
+     * @param headers the headers to send
+     * @return the userId that the service returns if authentication was successful, or an empty optional if it was not successful
+     * @throws AuthenticationException
+     */
     Optional<String> authenticateWithHeaders(MultivaluedMap<String, String> headers) throws AuthenticationException;
 
 }

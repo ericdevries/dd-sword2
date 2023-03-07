@@ -29,6 +29,7 @@ public class CombinedCredentials {
 
     public CombinedCredentials(BasicCredentials basicCredentials, MultivaluedMap<String, String> headers) {
         this.basicCredentials = basicCredentials;
+        this.headers = headers;
     }
 
     public BasicCredentials getBasicCredentials() {
