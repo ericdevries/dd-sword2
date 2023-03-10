@@ -27,7 +27,7 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-public class SwordAuthenticator implements Authenticator<CombinedCredentials, Depositor> {
+public class SwordAuthenticator implements Authenticator<HeaderCredentials, Depositor> {
 
     private static final Logger log = LoggerFactory.getLogger(SwordAuthenticator.class);
 
@@ -41,13 +41,14 @@ public class SwordAuthenticator implements Authenticator<CombinedCredentials, De
     }
 
     @Override
-    public Optional<Depositor> authenticate(CombinedCredentials credentials) throws AuthenticationException {
+    public Optional<Depositor> authenticate(HeaderCredentials credentials) throws AuthenticationException {
+        var basicCredentials = credentials.getBasicCredentials();
         // if basic credentials are provided, check if we know this user
-        if (credentials.getBasicCredentials() != null) {
-            var user = getUserByName(credentials.getBasicCredentials().getUsername());
+        if (basicCredentials != null) {
+            var user = getUserByName(basicCredentials.getUsername());
 
             if (user.isEmpty()) {
-                log.debug("No matching users found for provided credentials with username {}", credentials.getBasicCredentials().getUsername());
+                log.debug("No matching users found for provided credentials with username {}", basicCredentials.getUsername());
                 return Optional.empty();
             }
 
@@ -58,7 +59,7 @@ public class SwordAuthenticator implements Authenticator<CombinedCredentials, De
                 log.debug("User is configured with a password hash, validating password for user {}", userConfig.getName());
 
                 // always return a value if there is a password hash, even if it does not match
-                if (BCrypt.checkpw(credentials.getBasicCredentials().getPassword(), userConfig.getPasswordHash())) {
+                if (BCrypt.checkpw(basicCredentials.getPassword(), userConfig.getPasswordHash())) {
                     return Optional.of(new Depositor(userConfig.getName(), userConfig.getFilepathMapping(), Set.copyOf(userConfig.getCollections())));
                 }
                 else {

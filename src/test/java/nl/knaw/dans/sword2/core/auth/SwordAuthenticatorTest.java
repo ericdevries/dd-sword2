@@ -16,8 +16,8 @@
 package nl.knaw.dans.sword2.core.auth;
 
 import io.dropwizard.auth.AuthenticationException;
-import io.dropwizard.auth.basic.BasicCredentials;
 import nl.knaw.dans.sword2.core.config.AuthorizationConfig;
+import nl.knaw.dans.sword2.core.config.PasswordDelegateConfig;
 import nl.knaw.dans.sword2.core.config.UserConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +28,7 @@ import javax.ws.rs.core.MultivaluedHashMap;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 
@@ -50,28 +51,35 @@ class SwordAuthenticatorTest {
     }
 
     SwordAuthenticator getAuthenticator(List<UserConfig> users) {
+        var delegate = new PasswordDelegateConfig();
+        delegate.setForwardHeaders(List.of("x-dataverse-key", "authorization"));
+        delegate.setUrl(passwordDelegate);
+
         var config = new AuthorizationConfig();
         config.setUsers(users);
-        config.setPasswordDelegate(passwordDelegate);
+        config.setPasswordDelegateConfig(delegate);
 
         return new SwordAuthenticator(config, authenticationService);
     }
 
-    CombinedCredentials buildCredentials(String username, String password, String header) {
-        var basic = username != null ? new BasicCredentials(username, password) : null;
+    HeaderCredentials buildCredentials(String username, String password, String header) {
         var headers = new MultivaluedHashMap<String, String>();
 
         if (header != null) {
             headers.put("x-dataverse-key", List.of(header));
         }
 
-        return new CombinedCredentials(basic, headers);
+        if (username != null) {
+            var formatted = String.format("%s:%s", username, password);
+            var pass = Base64.getEncoder().encodeToString(formatted.getBytes());
+            headers.putSingle("Authorization", "Basic " + pass);
+        }
+
+        return new HeaderCredentials(headers);
     }
 
     @Test
     void authenticate_should_return_empty_optional_if_no_users_are_configured() {
-        var emptyList = new ArrayList<UserConfig>();
-
         var result = assertDoesNotThrow(() ->
             getAuthenticator(List.of()).authenticate(
                 buildCredentials("user", "password", null)

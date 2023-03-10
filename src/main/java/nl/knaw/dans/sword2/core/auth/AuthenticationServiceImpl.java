@@ -17,6 +17,7 @@ package nl.knaw.dans.sword2.core.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.dropwizard.auth.AuthenticationException;
+import nl.knaw.dans.sword2.core.config.PasswordDelegateConfig;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
@@ -27,17 +28,17 @@ import org.slf4j.LoggerFactory;
 import javax.ws.rs.core.MultivaluedMap;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class AuthenticationServiceImpl implements AuthenticationService {
     private static final Logger log = LoggerFactory.getLogger(AuthenticationServiceImpl.class);
-    private final URL passwordDelegate;
+    private final PasswordDelegateConfig passwordDelegateConfig;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
 
-    public AuthenticationServiceImpl(URL passwordDelegate, HttpClient httpClient, ObjectMapper objectMapper) {
-        this.passwordDelegate = passwordDelegate;
+    public AuthenticationServiceImpl(PasswordDelegateConfig passwordDelegateConfig, HttpClient httpClient, ObjectMapper objectMapper) {
+        this.passwordDelegateConfig = passwordDelegateConfig;
         this.httpClient = httpClient;
         this.objectMapper = objectMapper;
     }
@@ -45,13 +46,22 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Override
     public Optional<String> authenticateWithHeaders(MultivaluedMap<String, String> headers) throws AuthenticationException {
         try {
-            var request = new HttpPost(passwordDelegate.toURI());
+            var request = new HttpPost(passwordDelegateConfig.getUrl().toURI());
+            var allowedHeaders = passwordDelegateConfig.getForwardHeaders().stream()
+                .map(String::toLowerCase)
+                .collect(Collectors.toSet());
 
-            for (var entry : headers.entrySet()) {
-                if (entry.getValue().size() > 0) {
-                    request.setHeader(entry.getKey(), entry.getValue().get(0));
-                }
-            }
+            log.debug("Filtering headers, allowed headers are {}", allowedHeaders);
+            headers.entrySet().stream()
+                // only set headers that are configured
+                .filter(h -> allowedHeaders.contains(h.getKey().toLowerCase()))
+                // only set headers that have a value
+                .filter(h -> h.getValue().size() > 0)
+                .forEach(h -> request.setHeader(h.getKey().toLowerCase(), h.getValue().get(0)));
+
+            // always add this header to have a valid request
+            request.setHeader("accept", "application/json");
+            log.debug("Headers set to {}", (Object) request.getAllHeaders());
 
             return doRequest(request);
         }

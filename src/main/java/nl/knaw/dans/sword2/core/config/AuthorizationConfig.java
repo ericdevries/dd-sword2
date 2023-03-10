@@ -15,24 +15,18 @@
  */
 package nl.knaw.dans.sword2.core.config;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import javax.validation.Valid;
-import java.net.URL;
 import java.util.List;
 
 public class AuthorizationConfig {
 
     @Valid
-    private URL passwordDelegate;
+    @JsonProperty("passwordDelegate")
+    private PasswordDelegateConfig passwordDelegateConfig;
     @Valid
     private List<UserConfig> users;
-
-    public URL getPasswordDelegate() {
-        return passwordDelegate;
-    }
-
-    public void setPasswordDelegate(URL passwordDelegate) {
-        this.passwordDelegate = passwordDelegate;
-    }
 
     public List<UserConfig> getUsers() {
         return users;
@@ -45,8 +39,16 @@ public class AuthorizationConfig {
     @Override
     public String toString() {
         return "AuthorizationConfig{" +
-            "passwordDelegate=" + passwordDelegate +
+            "passwordDelegateConfig=" + passwordDelegateConfig +
             ", users=" + users +
             '}';
+    }
+
+    public PasswordDelegateConfig getPasswordDelegateConfig() {
+        return passwordDelegateConfig;
+    }
+
+    public void setPasswordDelegateConfig(PasswordDelegateConfig passwordDelegateConfig) {
+        this.passwordDelegateConfig = passwordDelegateConfig;
     }
 }
