@@ -73,36 +73,40 @@ sword2:
     minThreads: 2
     nameFormat: reschedule-worker-%d
 
-#
-# Client user accounts.
-#
-users:
+
+authorization:
+  passwordDelegate:
+    url: http://localhost:20000/
+    forwardHeaders:
+      - authorization
+      - x-dataverse-key
 
   #
-  # Example user
+  # Client user accounts.
   #
-  - name: user001
+  users:
 
-    # BCrypt encrypted password (set to the string 'user001')
-    passwordHash: $2a$10$yvmSYczU7z4KL6qmRCTgTeSvo7uurwPUbB9s/mTKzJrYM/sQKgF.y
+    #
+    # Example user
+    #
+    - name: user001
 
-    # The delegate that will perform a check with dataverse to verify credentials
-    # This property is mutually exclusive with passwordHash
-    # passwordDelegate: http://localhost:20340/
+      # BCrypt encrypted password (set to the string 'user001')
+      passwordHash: $2a$10$yvmSYczU7z4KL6qmRCTgTeSvo7uurwPUbB9s/mTKzJrYM/sQKgF.y
 
-    # Collections that this user is allowed to send deposits to
-    collections:
-      - collection1
+      # Collections that this user is allowed to send deposits to
+      collections:
+        - collection1
 
-    # If true, the payload files of received bags will renamed on extraction. The new name will be a newly created UUID. The mapping to the original path + name
-    # is kept in the file original-filepaths.txt in the root of the bag. This file has lines in with the following lay-out
-    #
-    # <new filename>  <original path + filename>
-    #
-    # for example:
-    #
-    # 5c08c155-a986-4833-b465-ab31a12288ae  data/path/to/original/file.txt
-    #
-    filepathMapping: true
+      # If true, the payload files of received bags will renamed on extraction. The new name will be a newly created UUID. The mapping to the original path + name
+      # is kept in the file original-filepaths.txt in the root of the bag. This file has lines in with the following lay-out
+      #
+      # <new filename>  <original path + filename>
+      #
+      # for example:
+      #
+      # 5c08c155-a986-4833-b465-ab31a12288ae  data/path/to/original/file.txt
+      #
+      filepathMapping: true
 
 

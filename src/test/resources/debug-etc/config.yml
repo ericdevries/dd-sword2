@@ -8,14 +8,19 @@ server:
     - type: http
       port: 20321
 
-users:
-  - name: 'user001'
-    passwordDelegate: http://dar.dans.knaw.nl:20340/
-    # or
-    # passwordHash: '$2a$10$yvmSYczU7z4KL6qmRCTgTeSvo7uurwPUbB9s/mTKzJrYM/sQKgF.y' # user001
-    filepathMapping: true
-    collections:
-      - collection1
+authorization:
+  passwordDelegate:
+    url: http://dar.dans.knaw.nl:20340/
+    forwardHeaders:
+      - authorization
+      - x-dataverse-key
+  users:
+    - name: 'user001'
+      # or
+      # passwordHash: '$2a$10$yvmSYczU7z4KL6qmRCTgTeSvo7uurwPUbB9s/mTKzJrYM/sQKgF.y' # user001
+      filepathMapping: true
+      collections:
+        - collection1
 
 sword2:
   baseUrl: 'http://localhost:20320/'
@@ -36,7 +41,7 @@ sword2:
       path: '2'
       uploads: data/tmp/2/uploads
       deposits: data/tmp/2/deposits
-      depositTrackingPath: []
+      depositTrackingPath: [ ]
       autoClean:
         - INVALID
       diskSpaceMargin: 2G
