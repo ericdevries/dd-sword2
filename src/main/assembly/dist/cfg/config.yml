@@ -79,7 +79,7 @@ authorization:
     url: http://localhost:20340/
     forwardHeaders:
       - Authorization
-      - x-dataverse-key
+      - X-Dataverse-key
 
   #
   # Client user accounts.
