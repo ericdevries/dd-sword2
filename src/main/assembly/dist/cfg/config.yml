@@ -76,7 +76,7 @@ sword2:
 
 authorization:
   passwordDelegate:
-    url: http://localhost:20000/
+    url: http://localhost:20340/
     forwardHeaders:
       - authorization
       - x-dataverse-key
