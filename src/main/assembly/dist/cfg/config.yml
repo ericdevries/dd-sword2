@@ -78,7 +78,7 @@ authorization:
   passwordDelegate:
     url: http://localhost:20340/
     forwardHeaders:
-      - authorization
+      - Authorization
       - x-dataverse-key
 
   #
