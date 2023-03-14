@@ -92,7 +92,7 @@ authorization:
     - name: user001
 
       # BCrypt encrypted password (set to the string 'user001')
-      passwordHash: $2a$10$yvmSYczU7z4KL6qmRCTgTeSvo7uurwPUbB9s/mTKzJrYM/sQKgF.y
+      # passwordHash: $2a$10$yvmSYczU7z4KL6qmRCTgTeSvo7uurwPUbB9s/mTKzJrYM/sQKgF.y
 
       # Collections that this user is allowed to send deposits to
       collections:
