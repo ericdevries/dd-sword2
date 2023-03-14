@@ -60,7 +60,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .forEach(h -> request.setHeader(h.getKey().toLowerCase(), h.getValue().get(0)));
 
             // always add this header to have a valid request
-            request.setHeader("accept", "application/json");
+            request.setHeader("Accept", "application/json");
             log.debug("Headers set to {}", (Object) request.getAllHeaders());
 
             return doRequest(request);
